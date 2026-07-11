@@ -1,0 +1,95 @@
+# docs-testing.config.example.yml
+#
+# Example configuration for the documentation testing tool.
+#
+# Copy this into your repository as `docs-testing.config.yml` and adapt it. The
+# workflow reads this file to decide which tests to run, what to compare against,
+# and how to report.
+#
+# Model:
+#   - The tool ships tests. You pick which ones to run here, point them at your
+#     docs, and choose how to report.
+#   - Each test is `agentic` (a review by an AI engine) or `deterministic` (a
+#     command that emits findings in the schema in RESULTS-SCHEMA.md).
+#   - You can also add your own tests, most often deterministic ones that are
+#     specific to your project.
+#
+# Shipped tests live in the tool repo, which the workflow checks out at
+# `.docs-testing-tool`. Reference them by path (see below).
+
+version: 1
+
+# ---------------------------------------------------------------------------
+# Sources of truth some tests compare documentation against.
+# Referenced by tests via their `name`. `auth` names a SECRET holding a read
+# token — the secret lives in GitHub, never in this file. Omit `auth` for public
+# repos. A test that needs no source of truth can omit `sources` entirely.
+# ---------------------------------------------------------------------------
+sources:
+  - name: product           # example name — reference this from a test
+    repo: my-org/my-product # example — replace with your repo
+    ref: main               # pin to a tag/commit for reproducible runs
+    paths:                  # only these paths are relevant
+      - "**"
+    auth: secret:PRODUCT_REPO_TOKEN   # omit for public repos
+
+# ---------------------------------------------------------------------------
+# Reporting. Findings from all tests are summarized together.
+#   check-run - GitHub Check Run with a pass/fail conclusion (CI-gating). Default.
+#   issue     - open a GitHub issue summarizing findings.
+#   both      - do both.
+# ---------------------------------------------------------------------------
+reporting:
+  mode: check-run
+  fail_on_findings: true          # set false to report without failing CI
+  title: "Docs testing"
+  labels:
+    - "docs-testing"
+
+# ---------------------------------------------------------------------------
+# Tests to run. Add as many as you like; each is independent.
+# ---------------------------------------------------------------------------
+tests:
+  # --- A shipped agentic test -----------------------------------------------
+  - name: reference-review
+    type: agentic
+    # copilot | claude | codex — passed to the AI engine.
+    engine: copilot
+    # Instruction file for the test. Shipped tests live under the tool checkout.
+    instructions: .docs-testing-tool/tests/agentic/reference-review.md
+    # Documentation this test covers.
+    targets:
+      - "reference/**/*.md"
+    exclude:
+      - "reference/legacy/**"
+    # Which sources of truth (by name) this test compares against.
+    sources:
+      - product
+    # How to treat auto-generated material within the targets:
+    #   skip               - ignore it entirely
+    #   annotate           - review it, but label findings as generated
+    #   deterministic-only - only deterministic tests may cover it
+    generated:
+      paths:
+        - "reference/api/**"
+      mode: skip
+    # Skip anything already reported by a deterministic test, to avoid duplicates.
+    skip_deterministically_covered: true
+
+  # --- A shipped deterministic test -----------------------------------------
+  - name: reference-links
+    type: deterministic
+    command: "python .docs-testing-tool/tests/deterministic/broken_links.py --targets 'reference/**/*.md' --output results/reference-links.json"
+    results_file: "results/reference-links.json"
+
+  # --- Your own deterministic test ------------------------------------------
+  # Any command, in any language, that writes the schema in RESULTS-SCHEMA.md.
+  # Runs on the CI runner; the tool does not manage your project's environment.
+  # Use `setup` for any commands needed to prepare THIS test.
+  # - name: commands-documented
+  #   type: deterministic
+  #   command: "python scripts/check_commands.py --output results/commands.json"
+  #   results_file: "results/commands.json"
+  #   setup:
+  #     - "pip install -r scripts/requirements.txt"
+

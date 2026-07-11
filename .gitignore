@@ -1,0 +1,11 @@
+# Generated deterministic check results
+results.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor
+.vscode/
