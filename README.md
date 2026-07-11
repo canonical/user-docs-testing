@@ -23,7 +23,10 @@ Choose which tests to run, and point them at your docs, in your config.
 
 1. Copy [workflows/docs-testing.md](workflows/docs-testing.md) into your repo under
    `.github/workflows/`.
-2. Add a `docs-testing.config.yml` (see
-   [docs-testing.config.example.yml](docs-testing.config.example.yml)) selecting
-   the tests you want and pointing them at your docs.
-3. Compile with `gh aw compile` and commit the generated `.lock.yml`.
+2. In its `imports:` block, list the shipped agentic tests you want. They're
+   fetched from this (public) repo when you compile, so your runs don't need
+   access to it.
+3. Add a `docs-testing.config.yml` (see
+   [docs-testing.config.example.yml](docs-testing.config.example.yml)) with each
+   test's targets, sources, and reporting.
+4. Compile with `gh aw compile` and commit the generated `.lock.yml`.
