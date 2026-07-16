@@ -21,7 +21,7 @@ labels: ["docs-testing", "automation"]
 # generated lock file — so the workflow needs no runtime access to the tool repo.
 # Add one line per agentic test you want; remove the ones you don't.
 imports:
-  - canonical/docs-testing-tool/tests/agentic/reference-review.md@v1
+  - canonical/user-docs-testing/tests/agentic/reference-review.md@v1
 
 on:
   # Manual trigger.
@@ -54,9 +54,9 @@ checkout:
   # repo to get run_tests.py and the shipped check scripts. Not needed for
   # agentic-only setups, or when your deterministic scripts live in your repo.
   #
-  # - repo: canonical/docs-testing-tool
+  # - repo: canonical/user-docs-testing
   #   ref: v1
-  #   path: .docs-testing-tool
+  #   path: .user-docs-testing
 
 # Deterministic layer (OPTIONAL). Uncomment if your config declares deterministic
 # tests. It runs the orchestrator before the agent, writing combined findings to
@@ -69,7 +69,7 @@ checkout:
 #   - name: Install orchestrator deps
 #     run: pip install pyyaml
 #   - name: Run deterministic tests
-#     run: python .docs-testing-tool/run_tests.py --config docs-testing.config.yml --output results/all.json
+#     run: python .user-docs-testing/run_tests.py --config docs-testing.config.yml --output results/all.json
 #   - name: Upload deterministic results
 #     uses: actions/upload-artifact@v4
 #     with:

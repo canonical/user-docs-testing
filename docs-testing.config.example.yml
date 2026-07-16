@@ -19,7 +19,7 @@
 #     `imports:` block in workflows/docs-testing.md). This config supplies their
 #     targets, sources, and reporting; the workflow supplies the instructions.
 #   - Shipped deterministic scripts come from checking out the (public) tool repo
-#     in your workflow (the optional `.docs-testing-tool` checkout).
+#     in your workflow (the optional `.user-docs-testing` checkout).
 
 version: 1
 
@@ -57,7 +57,7 @@ tests:
   # --- A shipped agentic test -----------------------------------------------
   # Its instructions come from importing the matching test in your workflow:
   #   imports:
-  #     - OWNER/docs-testing-tool/tests/agentic/reference-review.md@v1
+  #     - OWNER/user-docs-testing/tests/agentic/reference-review.md@v1
   # `name` must match the imported test. This entry supplies its parameters.
   - name: reference-review
     type: agentic
@@ -84,10 +84,10 @@ tests:
 
   # --- A shipped deterministic test -----------------------------------------
   # Uses a script from the tool repo, so your workflow must check it out (the
-  # optional `.docs-testing-tool` checkout) and enable the deterministic steps.
+  # optional `.user-docs-testing` checkout) and enable the deterministic steps.
   - name: reference-links
     type: deterministic
-    command: "python .docs-testing-tool/tests/deterministic/broken_links.py --targets 'reference/**/*.md' --output results/reference-links.json"
+    command: "python .user-docs-testing/tests/deterministic/broken_links.py --targets 'reference/**/*.md' --output results/reference-links.json"
     results_file: "results/reference-links.json"
 
   # --- Your own deterministic test ------------------------------------------

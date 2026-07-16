@@ -1,4 +1,4 @@
-# docs-testing-tool
+# user-docs-testing
 
 > This project is a work-in-progress.
 

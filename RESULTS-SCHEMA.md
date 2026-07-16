@@ -62,7 +62,7 @@ The orchestrator writes a merged file (default `results/all.json`):
 
 ```json
 {
-  "tool": "docs-testing-tool",
+  "tool": "user-docs-testing",
   "schema_version": 1,
   "summary": {
     "tests_run": 2,
