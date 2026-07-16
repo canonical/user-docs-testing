@@ -35,6 +35,17 @@ on:
 permissions:
   contents: read
 
+# AI engine that runs the agentic tests. Not fixed to Copilot — set this to any
+# provider gh-aw supports and store the matching secret in your repo/org:
+#   copilot -> COPILOT_GITHUB_TOKEN (fine-grained PAT, Copilot Requests: Read-only)
+#   claude  -> ANTHROPIC_API_KEY
+#   codex   -> OPENAI_API_KEY
+#   gemini  -> GEMINI_API_KEY
+# OpenAI-compatible providers (e.g. OpenRouter) work via codex + OPENAI_BASE_URL
+# or Copilot BYOK + COPILOT_PROVIDER_BASE_URL; add the provider host to
+# network.allowed. After changing this, run `gh aw compile` and commit the
+# regenerated .lock.yml. This engine token is SEPARATE from any source token
+# below. See https://github.github.com/gh-aw/reference/engines/ and README.md.
 engine: copilot
 
 # Check out the repositories the run needs.
@@ -42,7 +53,9 @@ checkout:
   # Your repository: documentation and docs-testing.config.yml.
   - repo: ${{ github.repository }}
 
-  # Your source-of-truth repo(s). One block per source in your config. Use a
+  # Your source-of-truth repo(s). One block per source in your config. A private
+  # source needs its OWN read token (Contents: Read) — this is separate from the
+  # engine token above, and a personal fine-grained PAT cannot span orgs. Use a
   # secret for private repos; omit `token` for public ones. Example:
   #
   # - repo: my-org/my-product
