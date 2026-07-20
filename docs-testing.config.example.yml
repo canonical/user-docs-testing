@@ -19,15 +19,19 @@
 #     `imports:` block in workflows/docs-testing.md). This config supplies their
 #     targets, sources, and reporting; the workflow supplies the instructions.
 #   - Shipped deterministic scripts come from checking out the (public) tool repo
-#     in your workflow (the optional `.docs-testing-tool` checkout).
+#     in your workflow (the optional `.user-docs-testing` checkout).
 
 version: 1
 
 # ---------------------------------------------------------------------------
 # Sources of truth some tests compare documentation against.
 # Referenced by tests via their `name`. `auth` names a SECRET holding a read
-# token — the secret lives in GitHub, never in this file. Omit `auth` for public
-# repos. A test that needs no source of truth can omit `sources` entirely.
+# token — the secret lives in GitHub, never in this file. This SOURCE token is
+# separate from the engine token (how the AI agent authenticates); it only lets
+# `actions/checkout` read a PRIVATE source. Give it Contents: Read. A personal
+# fine-grained PAT has a single owner, so a private source in another org needs
+# its own org-owned secret. Omit `auth` for public repos. A test that needs no
+# source of truth can omit `sources` entirely. See README.md "Engines and tokens".
 # ---------------------------------------------------------------------------
 sources:
   - name: product           # example name — reference this from a test
@@ -57,11 +61,12 @@ tests:
   # --- A shipped agentic test -----------------------------------------------
   # Its instructions come from importing the matching test in your workflow:
   #   imports:
-  #     - OWNER/docs-testing-tool/tests/agentic/reference-review.md@v1
+  #     - canonical/user-docs-testing/tests/agentic/reference-review.md@v1
   # `name` must match the imported test. This entry supplies its parameters.
   - name: reference-review
     type: agentic
-    # copilot | claude | codex — passed to the AI engine.
+    # AI engine for this test: copilot | claude | codex | gemini. Must match the
+    # `engine:` in your workflow, whose matching secret authenticates the agent.
     engine: copilot
     # Documentation this test covers.
     targets:
@@ -84,10 +89,10 @@ tests:
 
   # --- A shipped deterministic test -----------------------------------------
   # Uses a script from the tool repo, so your workflow must check it out (the
-  # optional `.docs-testing-tool` checkout) and enable the deterministic steps.
+  # optional `.user-docs-testing` checkout) and enable the deterministic steps.
   - name: reference-links
     type: deterministic
-    command: "python .docs-testing-tool/tests/deterministic/broken_links.py --targets 'reference/**/*.md' --output results/reference-links.json"
+    command: "python .user-docs-testing/tests/deterministic/broken_links.py --targets 'reference/**/*.md' --output results/reference-links.json"
     results_file: "results/reference-links.json"
 
   # --- Your own deterministic test ------------------------------------------

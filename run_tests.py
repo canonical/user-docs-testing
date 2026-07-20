@@ -125,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
 
     has_error = any(f.get("severity") == "error" for f in all_findings)
     combined = {
-        "tool": "docs-testing-tool",
+        "tool": "user-docs-testing",
         "schema_version": SCHEMA_VERSION,
         "summary": {
             "tests_run": tests_run,

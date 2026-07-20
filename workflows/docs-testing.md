@@ -21,7 +21,7 @@ labels: ["docs-testing", "automation"]
 # generated lock file — so the workflow needs no runtime access to the tool repo.
 # Add one line per agentic test you want; remove the ones you don't.
 imports:
-  - canonical/docs-testing-tool/tests/agentic/reference-review.md@v1
+  - canonical/user-docs-testing/tests/agentic/reference-review.md@v1
 
 on:
   # Manual trigger.
@@ -35,6 +35,17 @@ on:
 permissions:
   contents: read
 
+# AI engine that runs the agentic tests. Not fixed to Copilot — set this to any
+# provider gh-aw supports and store the matching secret in your repo/org:
+#   copilot -> COPILOT_GITHUB_TOKEN (fine-grained PAT, Copilot Requests: Read-only)
+#   claude  -> ANTHROPIC_API_KEY
+#   codex   -> OPENAI_API_KEY
+#   gemini  -> GEMINI_API_KEY
+# OpenAI-compatible providers (e.g. OpenRouter) work via codex + OPENAI_BASE_URL
+# or Copilot BYOK + COPILOT_PROVIDER_BASE_URL; add the provider host to
+# network.allowed. After changing this, run `gh aw compile` and commit the
+# regenerated .lock.yml. This engine token is SEPARATE from any source token
+# below. See https://github.github.com/gh-aw/reference/engines/ and README.md.
 engine: copilot
 
 # Check out the repositories the run needs.
@@ -42,7 +53,9 @@ checkout:
   # Your repository: documentation and docs-testing.config.yml.
   - repo: ${{ github.repository }}
 
-  # Your source-of-truth repo(s). One block per source in your config. Use a
+  # Your source-of-truth repo(s). One block per source in your config. A private
+  # source needs its OWN read token (Contents: Read) — this is separate from the
+  # engine token above, and a personal fine-grained PAT cannot span orgs. Use a
   # secret for private repos; omit `token` for public ones. Example:
   #
   # - repo: my-org/my-product
@@ -54,9 +67,9 @@ checkout:
   # repo to get run_tests.py and the shipped check scripts. Not needed for
   # agentic-only setups, or when your deterministic scripts live in your repo.
   #
-  # - repo: canonical/docs-testing-tool
+  # - repo: canonical/user-docs-testing
   #   ref: v1
-  #   path: .docs-testing-tool
+  #   path: .user-docs-testing
 
 # Deterministic layer (OPTIONAL). Uncomment if your config declares deterministic
 # tests. It runs the orchestrator before the agent, writing combined findings to
@@ -69,7 +82,7 @@ checkout:
 #   - name: Install orchestrator deps
 #     run: pip install pyyaml
 #   - name: Run deterministic tests
-#     run: python .docs-testing-tool/run_tests.py --config docs-testing.config.yml --output results/all.json
+#     run: python .user-docs-testing/run_tests.py --config docs-testing.config.yml --output results/all.json
 #   - name: Upload deterministic results
 #     uses: actions/upload-artifact@v4
 #     with:
