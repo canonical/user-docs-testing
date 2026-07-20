@@ -61,7 +61,7 @@ tests:
   # --- A shipped agentic test -----------------------------------------------
   # Its instructions come from importing the matching test in your workflow:
   #   imports:
-  #     - OWNER/user-docs-testing/tests/agentic/reference-review.md@v1
+  #     - canonical/user-docs-testing/tests/agentic/reference-review.md@v1
   # `name` must match the imported test. This entry supplies its parameters.
   - name: reference-review
     type: agentic
