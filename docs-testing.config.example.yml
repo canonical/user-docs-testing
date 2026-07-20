@@ -125,6 +125,30 @@ tests:
     # Skip anything already reported by a deterministic test, to avoid duplicates.
     skip_deterministically_covered: true
 
+  # --- Other shipped agentic tests (optional; sharper than the general one) --
+  # Enable any of these by importing its instruction file in your workflow and
+  # adding an entry here. They follow the same shape as reference-review above.
+  # - name: reference-completeness   # interface in source but undocumented
+  #   type: agentic
+  #   engine: copilot
+  #   targets: ["reference/**/*.md"]
+  #   sources: [product]
+  # - name: reference-defaults       # documented defaults / types / constraints
+  #   type: agentic
+  #   engine: copilot
+  #   targets: ["reference/**/*.md"]
+  #   sources: [product]
+  # - name: reference-consistency    # pages agree with each other / across repos
+  #   type: agentic
+  #   engine: copilot
+  #   targets: ["reference/**/*.md"]
+  #   sources: [product]            # optional for this test
+  # - name: reference-permissions    # auth / privilege / permission claims
+  #   type: agentic
+  #   engine: copilot
+  #   targets: ["reference/**/*.md"]
+  #   sources: [product]
+
   # --- A shipped deterministic test -----------------------------------------
   # Uses a script from the tool repo, so your workflow must check it out (the
   # optional `.user-docs-testing` checkout) and enable the deterministic steps.

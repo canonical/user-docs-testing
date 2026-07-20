@@ -203,6 +203,63 @@ tests:
         sources: []
     skip_deterministically_covered: true
 
+  # --- Focused agentic tests (optional, sharper than the general review) ----
+  # Each imports its matching instruction file in your workflow, e.g.:
+  #   - canonical/user-docs-testing/tests/agentic/reference-completeness.md@main
+  # Ownership is inferred the same way as the general test's source_map above.
+  - name: reference-completeness
+    type: agentic
+    engine: copilot
+    targets:
+      - "docs/reference/**/*.md"
+    exclude:
+      - "docs/reference/release-notes/**"
+      - "docs/reference/known-issues.md"
+      - "docs/reference/_includes/**"
+    sources:
+      - landscape-client
+      - landscape-server
+      - landscape-server-operator
+      - landscape-ui
+    skip_deterministically_covered: true
+
+  - name: reference-defaults
+    type: agentic
+    engine: copilot
+    # Defaults/types/constraints live in the server config reference.
+    targets:
+      - "docs/reference/config/**/*.md"
+    sources:
+      - landscape-server
+    skip_deterministically_covered: true
+
+  - name: reference-consistency
+    type: agentic
+    engine: copilot
+    targets:
+      - "docs/reference/**/*.md"
+    exclude:
+      - "docs/reference/release-notes/**"
+      - "docs/reference/known-issues.md"
+      - "docs/reference/_includes/**"
+    # Sources are optional here; when present they adjudicate cross-page conflicts.
+    sources:
+      - landscape-server
+      - landscape-ui
+
+  - name: reference-permissions
+    type: agentic
+    engine: copilot
+    # Root/role/permission claims: lsctl (root), admin/roles terms, server config.
+    targets:
+      - "docs/reference/lsctl.md"
+      - "docs/reference/terms/administrators.md"
+      - "docs/reference/terms/roles.md"
+      - "docs/reference/config/**/*.md"
+    sources:
+      - landscape-server
+    skip_deterministically_covered: true
+
   # --- Deterministic broken-link check -------------------------------------
   # Uses the shipped script; your workflow must check out the tool repo (e.g.
   # under .docs-testing-tool) to provide it. For a LOCAL trial, run it against
@@ -211,6 +268,21 @@ tests:
     type: deterministic
     command: "python .docs-testing-tool/tests/deterministic/broken_links.py --targets 'docs/reference/**/*.md' --output results/reference-links.json"
     results_file: "results/reference-links.json"
+
+  # --- Deterministic surface-coverage check (optional) ---------------------
+  # The precise, repeatable counterpart to the agentic reference-completeness
+  # test, for surfaces that are machine-enumerable. Point --manifest at an
+  # interface description generated from the OWNING source (OpenAPI/Swagger JSON,
+  # an exported JSON Schema, a captured `--help`, or a plain newline list) and it
+  # flags identifiers absent from the docs. Generating the manifest is the
+  # product-specific step: for Landscape's server API/config this must come from
+  # the private landscape-server source, so create it in an earlier workflow step
+  # before this test runs. Findings carry `surface:<id>` covered_topics, so the
+  # agentic reference-completeness test skips whatever this already reported.
+  # - name: reference-surface-coverage
+  #   type: deterministic
+  #   command: "python .docs-testing-tool/tests/deterministic/undocumented_surface.py --manifest sources/landscape-server/openapi.json --targets 'docs/reference/**/*.md' --output results/surface-coverage.json"
+  #   results_file: "results/surface-coverage.json"
 
 # ---------------------------------------------------------------------------
 # COVERAGE EXPECTATIONS FOR THIS EXAMPLE

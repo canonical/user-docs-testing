@@ -4,6 +4,20 @@ A shipped agentic test. It reviews reference documentation against a source of
 truth (code, configuration, or generated artifacts) and reports where the
 documentation no longer matches it.
 
+This is the **general, default** reference test — a broad accuracy review. If you
+run only one reference test, run this one. For sharper coverage of specific
+concerns, also enable the focused tests; each does a better job within its
+narrower remit, and they overlap with this one by design (this is the safety net,
+they are the precise instruments):
+
+- `reference-completeness` — interface that exists in the source but is
+  undocumented (what is MISSING, rather than wrong).
+- `reference-defaults` — documented default values, types, and constraints.
+- `reference-consistency` — reference pages agreeing with each other and across
+  components.
+- `reference-permissions` — documented authentication, privilege, and permission
+  requirements.
+
 Enable it from your `docs-testing.config.yml` and point its `targets` at your
 reference docs and its `sources` at what they describe.
 
@@ -73,6 +87,17 @@ cannot be found in one source may simply belong to a different component.
    - a test fixture does not outweigh the production parser or schema.
 6. Only flag issues you can justify by pointing to specific source evidence. When
    unsure, prefer not to flag.
+
+### Respect version and source ref
+
+Reference docs often describe several product versions (for example "since
+25.10", "changed in 26.04", "deprecated in 26.10"), while each source is checked
+out at a single `ref`. Before flagging drift, check whether a claim is scoped to a
+version other than the one the source `ref` represents. Do not report a
+version-gated, "since", or deprecated claim as a mismatch when it merely describes
+a version different from the checked-out source. When a doc's version scope and the
+source `ref` clearly diverge, note the version skew rather than flagging a hard
+mismatch.
 
 ## Missing or unavailable sources
 

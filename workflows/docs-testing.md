@@ -19,9 +19,18 @@ labels: ["docs-testing", "automation"]
 # Shipped agentic tests. Each is a markdown instruction file fetched from the
 # (public) tool repo at COMPILE time, pinned to a ref, and baked into the
 # generated lock file — so the workflow needs no runtime access to the tool repo.
-# Add one line per agentic test you want; remove the ones you don't.
+# Add one line per agentic test you want; remove the ones you don't. Available:
+#   reference-review        general accuracy/drift review (default; start here)
+#   reference-completeness  interface in source but undocumented
+#   reference-defaults      documented defaults, types, and constraints
+#   reference-consistency   pages agree with each other and across components
+#   reference-permissions   authentication / privilege / permission claims
 imports:
   - canonical/user-docs-testing/tests/agentic/reference-review.md@v1
+  # - canonical/user-docs-testing/tests/agentic/reference-completeness.md@v1
+  # - canonical/user-docs-testing/tests/agentic/reference-defaults.md@v1
+  # - canonical/user-docs-testing/tests/agentic/reference-consistency.md@v1
+  # - canonical/user-docs-testing/tests/agentic/reference-permissions.md@v1
 
 on:
   # Manual trigger.
