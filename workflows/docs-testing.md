@@ -19,9 +19,18 @@ labels: ["docs-testing", "automation"]
 # Shipped agentic tests. Each is a markdown instruction file fetched from the
 # (public) tool repo at COMPILE time, pinned to a ref, and baked into the
 # generated lock file — so the workflow needs no runtime access to the tool repo.
-# Add one line per agentic test you want; remove the ones you don't.
+# Add one line per agentic test you want; remove the ones you don't. Available:
+#   reference-review        general accuracy/drift review (default; start here)
+#   reference-completeness  interface in source but undocumented
+#   reference-defaults      documented defaults, types, and constraints
+#   reference-consistency   pages agree with each other and across components
+#   reference-permissions   authentication / privilege / permission claims
 imports:
   - canonical/user-docs-testing/tests/agentic/reference-review.md@v1
+  # - canonical/user-docs-testing/tests/agentic/reference-completeness.md@v1
+  # - canonical/user-docs-testing/tests/agentic/reference-defaults.md@v1
+  # - canonical/user-docs-testing/tests/agentic/reference-consistency.md@v1
+  # - canonical/user-docs-testing/tests/agentic/reference-permissions.md@v1
 
 on:
   # Manual trigger.
@@ -29,6 +38,14 @@ on:
   # Scheduled run — adjust or remove as needed.
   schedule:
     - cron: "0 6 * * 1"
+  # SECURITY — private sources and untrusted pull requests:
+  # Do NOT add a `pull_request` trigger from FORKS while any private source is
+  # configured. A fork PR can alter this workflow or docs-testing.config.yml and,
+  # if a privileged source token were exposed to it, use that token to read
+  # private repositories. Keep private-source runs on trusted events only
+  # (workflow_dispatch, schedule, or pushes to protected branches). If you need
+  # PR-time coverage, restrict it to same-repository PRs and gate any
+  # private-source checkout behind an appropriate trusted event.
 
 # The agent runs READ-ONLY. All writes happen in the gated safe-outputs job, so
 # secrets never enter the agent runtime.
@@ -62,6 +79,14 @@ checkout:
   #   ref: main
   #   path: sources/product
   #   token: ${{ secrets.PRODUCT_REPO_TOKEN }}
+  #
+  # Match each block to a `sources:` entry in docs-testing.config.yml. If a
+  # source is REQUIRED there and its checkout fails, the runs that depend on it
+  # are incomplete — the agent reports those files as blocked, never as passing.
+  # For an OPTIONAL source (`required: false`), you may add `continue-on-error:
+  # true` so a failed checkout does not fail the job; the agent then reports the
+  # dependent areas as unsupported. Never expose a private source token to an
+  # untrusted fork (see the SECURITY note under `on:`).
 
   # Only if you run a *shipped* deterministic test: check out the (public) tool
   # repo to get run_tests.py and the shipped check scripts. Not needed for

@@ -75,3 +75,27 @@ The orchestrator writes a merged file (default `results/all.json`):
 
 `summary.status` is `fail` if any finding has `severity: error`, otherwise
 `pass`.
+
+## Coverage status vocabulary
+
+A pass/fail status answers "did anything fail?" but not "what was actually
+reviewed?". Reviews are not always whole-repository: some files can be verified
+against an available source while others cannot, because a source is optional,
+unavailable, or not authoritative for that material.
+
+Tests (deterministic or agentic) that want to express *coverage* should classify
+each reviewed file or claim category as one of:
+
+| Coverage state                        | Meaning                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------ |
+| `reviewed-and-supported`              | Checked against an available authoritative source; no discrepancy.             |
+| `reviewed-with-conflicting-evidence`  | Checked, and the source contradicts the docs (or two sources disagree).        |
+| `skipped-by-policy`                   | Excluded by config (`exclude`) or the `generated` policy.                      |
+| `unsupported-by-configured-sources`   | No configured source is authoritative for it, and none is required for it.     |
+| `blocked-required-source-unavailable` | A required source it depends on could not be accessed; its review is incomplete. |
+
+These states are additive to `status`: a run can be `pass` while still listing
+files as `blocked-required-source-unavailable` or `unsupported-by-configured-sources`.
+Such files must NOT be reported as passing review. See
+[tests/agentic/reference-review.md](tests/agentic/reference-review.md) for how the
+shipped agentic test applies this vocabulary.
