@@ -42,7 +42,7 @@ Private sources need care: never expose a private source token to an untrusted
 fork (see the SECURITY note in [workflows/docs-testing.md](workflows/docs-testing.md)).
 A worked, multi-repository example (public + private sources, with an ownership
 map and partial-coverage notes) is in
-[examples/landscape.docs-testing.config.yml](examples/landscape.docs-testing.config.yml).
+[examples/landscape/](examples/landscape/).
 
 ## Usage
 
