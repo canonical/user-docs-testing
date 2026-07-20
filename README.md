@@ -19,6 +19,31 @@ Tests are declared in a `docs-testing.config.yml` in your repo. Two kinds:
 
 Choose which tests to run, and point them at your docs, in your config.
 
+## Sources and coverage
+
+Products are often implemented across several repositories, so the authoritative
+source for a documented claim depends on which component owns the behavior. The
+config models this:
+
+- Each entry under `sources:` names a repository a test compares docs against.
+  Mark it `required: true` (default) or `required: false`. A required source that
+  can't be read makes the reviews depending on it **incomplete** — those files are
+  reported as blocked, never as passing. An optional source can be absent, and the
+  areas that need it are reported as unsupported.
+- An agentic test may include a `source_map` associating in-scope files/claim
+  categories with the source(s) that own them, so each area is checked against the
+  *producer* of an interface (with other sources used only to corroborate).
+- Reviews are not reduced to one repo-wide pass/fail. The agent classifies each
+  area using the coverage vocabulary in [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md)
+  (reviewed-and-supported, reviewed-with-conflicting-evidence, skipped-by-policy,
+  unsupported-by-configured-sources, blocked-required-source-unavailable).
+
+Private sources need care: never expose a private source token to an untrusted
+fork (see the SECURITY note in [workflows/docs-testing.md](workflows/docs-testing.md)).
+A worked, multi-repository example (public + private sources, with an ownership
+map and partial-coverage notes) is in
+[examples/landscape.docs-testing.config.yml](examples/landscape.docs-testing.config.yml).
+
 ## Usage
 
 1. Copy [workflows/docs-testing.md](workflows/docs-testing.md) into your repo under

@@ -29,6 +29,14 @@ on:
   # Scheduled run — adjust or remove as needed.
   schedule:
     - cron: "0 6 * * 1"
+  # SECURITY — private sources and untrusted pull requests:
+  # Do NOT add a `pull_request` trigger from FORKS while any private source is
+  # configured. A fork PR can alter this workflow or docs-testing.config.yml and,
+  # if a privileged source token were exposed to it, use that token to read
+  # private repositories. Keep private-source runs on trusted events only
+  # (workflow_dispatch, schedule, or pushes to protected branches). If you need
+  # PR-time coverage, restrict it to same-repository PRs and gate any
+  # private-source checkout behind an appropriate trusted event.
 
 # The agent runs READ-ONLY. All writes happen in the gated safe-outputs job, so
 # secrets never enter the agent runtime.
@@ -62,6 +70,14 @@ checkout:
   #   ref: main
   #   path: sources/product
   #   token: ${{ secrets.PRODUCT_REPO_TOKEN }}
+  #
+  # Match each block to a `sources:` entry in docs-testing.config.yml. If a
+  # source is REQUIRED there and its checkout fails, the runs that depend on it
+  # are incomplete — the agent reports those files as blocked, never as passing.
+  # For an OPTIONAL source (`required: false`), you may add `continue-on-error:
+  # true` so a failed checkout does not fail the job; the agent then reports the
+  # dependent areas as unsupported. Never expose a private source token to an
+  # untrusted fork (see the SECURITY note under `on:`).
 
   # Only if you run a *shipped* deterministic test: check out the (public) tool
   # repo to get run_tests.py and the shipped check scripts. Not needed for

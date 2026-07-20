@@ -1,0 +1,237 @@
+# examples/landscape.docs-testing.config.yml
+#
+# EXAMPLE ONLY — a worked configuration for reviewing the Landscape reference
+# documentation with this tool. The tool itself is product-agnostic; this file
+# lives under examples/ purely to show how the source-ownership, required/optional,
+# and partial-coverage features fit a real, multi-repository product.
+#
+# It is NOT used by this repository's own CI. Copy it into a Landscape docs repo
+# as `docs-testing.config.yml`, adapt the paths/secrets, and wire the matching
+# checkout blocks in your workflow (see workflows/docs-testing.md).
+#
+# WHY LANDSCAPE IS A GOOD EXAMPLE
+#   Landscape is implemented across several repositories, and the authoritative
+#   source for a documented claim depends on which component owns the behavior.
+#   Some of those repositories are PRIVATE (notably Landscape Server), so the
+#   public repositories alone are NOT sufficient evidence to review all of the
+#   reference documentation. This example maps each reference area to the
+#   repository that actually owns it, and marks the private server repo as a
+#   REQUIRED source for server-side material.
+#
+# REPOSITORY INVENTORY (verified from the Landscape source/docs environment —
+# do not guess private repo names; confirm them against your own access):
+#   canonical/landscape-client          public   — Landscape Client
+#   canonical/landscape-server          PRIVATE  — Landscape Server (primary)
+#   canonical/landscape-server-operator PRIVATE  — server charm (was landscape-charm)
+#   canonical/landscape-ui              PRIVATE  — web portal / UI
+#   canonical/landscape-scripts         PRIVATE  — packaging / ops scripts
+#   canonical/landscape-bundles         PRIVATE  — charm bundles
+
+version: 1
+
+# ---------------------------------------------------------------------------
+# Sources of truth, one per component that owns some in-scope reference material.
+# `auth` names a GitHub SECRET holding a read token (Contents: Read); the token
+# never appears in this file. A single canonical-owned fine-grained PAT with
+# read access to these private repos can be reused across them, or use a
+# distinct least-privilege secret per source if you prefer tighter scoping.
+# `required` controls what happens when a source cannot be read (see README).
+# ---------------------------------------------------------------------------
+sources:
+  # --- Public: Landscape Client --------------------------------------------
+  # Public repo, so no `auth` is needed. Authoritative for client commands and
+  # client-side configuration.
+  - name: landscape-client
+    repo: canonical/landscape-client
+    ref: main                # pin to a tag/commit for reproducible runs
+    paths:
+      - "**"
+    required: true
+
+  # --- Private: Landscape Server (PRIMARY) ---------------------------------
+  # The private server repository is the primary source of truth for server-side
+  # reference material: lsctl and other server CLIs, server commands/options,
+  # configuration keys and defaults, systemd/twistd services, processes,
+  # executables, file/log paths, cron jobs, database schema/tables/migrations,
+  # server-side routes, auth/roles, activities, and repository/package-profile
+  # behavior. Do NOT substitute the UI, charm, or docs repos for claims the
+  # server actually implements — they may corroborate, but do not override it.
+  # REQUIRED: if it cannot be read, server-side files are reported as blocked
+  # (incomplete), never as passing.
+  - name: landscape-server
+    repo: canonical/landscape-server
+    ref: main
+    paths:
+      - "**"
+    auth: secret:LANDSCAPE_SOURCE_TOKEN
+    required: true
+
+  # --- Private: Landscape Server charm -------------------------------------
+  # Authoritative for server charm options and relations only. Optional: if the
+  # charm reference is out of scope or the repo is unavailable, that area is
+  # reported as unsupported rather than blocking the run.
+  - name: landscape-server-operator
+    repo: canonical/landscape-server-operator
+    ref: main
+    paths:
+      - "**"
+    auth: secret:LANDSCAPE_SOURCE_TOKEN
+    required: false
+
+  # --- Private: Landscape UI -----------------------------------------------
+  # Authoritative for current web-portal terminology and field labels, corroborated
+  # by server contracts where a field's semantics are actually server-defined.
+  # Optional. If your landscape-ui is public, drop the `auth:` line below.
+  - name: landscape-ui
+    repo: canonical/landscape-ui
+    ref: main
+    paths:
+      - "**"
+    auth: secret:LANDSCAPE_SOURCE_TOKEN
+    required: false
+
+  # --- Private: packaging / release policy (optional placeholders) ----------
+  # Add these only if package/PPA/version reference is in scope. Left as optional
+  # placeholders; uncomment and confirm the authoritative repo before relying on it.
+  # - name: landscape-bundles
+  #   repo: canonical/landscape-bundles
+  #   ref: main
+  #   paths: ["**"]
+  #   auth: secret:LANDSCAPE_SOURCE_TOKEN
+  #   required: false
+  # - name: landscape-scripts
+  #   repo: canonical/landscape-scripts
+  #   ref: main
+  #   paths: ["**"]
+  #   auth: secret:LANDSCAPE_SOURCE_TOKEN
+  #   required: false
+
+# ---------------------------------------------------------------------------
+# Reporting.
+# ---------------------------------------------------------------------------
+reporting:
+  mode: check-run
+  fail_on_findings: true
+  title: "Landscape docs testing"
+  labels:
+    - "docs-testing"
+
+# ---------------------------------------------------------------------------
+# Tests.
+# ---------------------------------------------------------------------------
+tests:
+  # --- Agentic reference review --------------------------------------------
+  # Imported in your workflow as:
+  #   imports:
+  #     - canonical/user-docs-testing/tests/agentic/reference-review.md@main
+  - name: reference-review
+    type: agentic
+    engine: copilot
+    targets:
+      - "docs/reference/**/*.md"
+    exclude:
+      # Release notes and known-issues are narrative, not source-backed reference.
+      - "docs/reference/release-notes/**"
+      - "docs/reference/known-issues/**"
+    sources:
+      - landscape-client
+      - landscape-server
+      - landscape-server-operator
+      - landscape-ui
+    # Explicit source-ownership map: each reference area is checked against the
+    # component that OWNS it (the producer), using other sources only to
+    # corroborate. This is what keeps server-side claims from being "verified"
+    # against public proxy sources. Confirm ownership against the real repos
+    # rather than copying these mappings blindly.
+    source_map:
+      - area: "Client commands and configuration"
+        paths:
+          - "docs/reference/config/**"
+        sources:
+          - landscape-client
+      - area: "Landscape Server CLI (lsctl and friends)"
+        paths:
+          - "docs/reference/lsctl/**"
+        sources:
+          - landscape-server
+      - area: "Database reference (schema, tables, migrations)"
+        paths:
+          - "docs/reference/database/**"
+        sources:
+          - landscape-server
+      - area: "Server services, processes, and logs"
+        paths:
+          - "docs/reference/logs/**"
+          - "docs/reference/networking/**"
+        sources:
+          - landscape-server
+      - area: "Server charm options and relations"
+        paths:
+          - "docs/reference/charm/**"
+        sources:
+          - landscape-server-operator
+      - area: "Web-portal terminology and field labels"
+        paths:
+          - "docs/reference/terms/**"
+        sources:
+          - landscape-ui
+          - landscape-server
+      - area: "Supported versions, PPAs, and package policy"
+        paths:
+          - "docs/reference/supported-versions-and-ppas/**"
+        # No authoritative source is configured above (packaging sources are left
+        # as optional placeholders), so this area is reported as
+        # unsupported-by-configured-sources until you add and map one.
+        sources: []
+    # The generated HTTP API reference is produced from the server, not authored
+    # by hand; skip it here (a deterministic generator check is the right tool).
+    generated:
+      paths:
+        - "docs/reference/api/**"
+      mode: skip
+    skip_deterministically_covered: true
+
+  # --- Deterministic broken-link check -------------------------------------
+  # Uses the shipped script; your workflow must check out the tool repo (e.g.
+  # under .docs-testing-tool) to provide it.
+  - name: reference-links
+    type: deterministic
+    command: "python .docs-testing-tool/tests/deterministic/broken_links.py --targets 'docs/reference/**/*.md' --output results/reference-links.json"
+    results_file: "results/reference-links.json"
+
+# ---------------------------------------------------------------------------
+# COVERAGE EXPECTATIONS FOR THIS EXAMPLE
+#
+# With the public source only (no private access), this example provides PARTIAL
+# Landscape coverage:
+#   - Fully reviewable now: client configuration (landscape-client, public).
+#   - Reviewable only with private access:
+#       * Landscape Server CLI / lsctl        -> landscape-server (REQUIRED)
+#       * Database reference                  -> landscape-server (REQUIRED)
+#       * Server services / processes / logs  -> landscape-server (REQUIRED)
+#       * Server charm options and relations  -> landscape-server-operator (optional)
+#       * Web-portal terminology              -> landscape-ui (optional)
+#   - Unsupported until a source is added: supported-versions-and-ppas.
+#   - Skipped by policy: generated API reference; release notes; known issues.
+#
+# Because landscape-server is REQUIRED, if it cannot be cloned/authenticated the
+# agent reports the server-side files as blocked-required-source-unavailable
+# (incomplete) — it must NOT pass them, and must NOT invent findings to explain
+# the gap. This example should only be described as a complete, source-backed
+# Landscape reference review once the private landscape-server source (and any
+# other required sources) were accessed successfully.
+#
+# PRIVATE-SOURCE SETUP (do before relying on the private areas):
+#   1. Create a canonical-owned fine-grained PAT with Contents: Read on the
+#      private repos above (landscape-server, landscape-server-operator,
+#      landscape-ui, and any packaging repos you enable). SSO-authorize it for
+#      the canonical org if SAML is enforced.
+#   2. Store it as the repository/org secret named by `auth:` above
+#      (LANDSCAPE_SOURCE_TOKEN), or use per-source least-privilege secrets.
+#   3. Add one checkout block per source in your workflow, passing
+#      `token: ${{ secrets.LANDSCAPE_SOURCE_TOKEN }}` for the private ones.
+#   4. Keep private-source runs on TRUSTED events only. A pull request from an
+#      untrusted fork must not be able to edit this config or the workflow and
+#      then read private repos with the token (see the SECURITY note in
+#      workflows/docs-testing.md).
+# ---------------------------------------------------------------------------

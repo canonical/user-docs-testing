@@ -32,6 +32,15 @@ version: 1
 # fine-grained PAT has a single owner, so a private source in another org needs
 # its own org-owned secret. Omit `auth` for public repos. A test that needs no
 # source of truth can omit `sources` entirely. See README.md "Engines and tokens".
+#
+# `required` (default true) tells the tool how to behave when a source cannot be
+# cloned, authenticated, or read:
+#   - A REQUIRED source that is unavailable makes every review that depends on it
+#     INCOMPLETE. Those files/areas are reported as blocked — never as passing —
+#     while files supported by other available sources are still reviewed.
+#   - An OPTIONAL source (`required: false`) is a specialized source only some
+#     claims need. A run may proceed without it; the areas that depend on it are
+#     reported as unsupported rather than blocking the whole run.
 # ---------------------------------------------------------------------------
 sources:
   - name: product           # example name — reference this from a test
@@ -40,6 +49,17 @@ sources:
     paths:                  # only these paths are relevant
       - "**"
     auth: secret:PRODUCT_REPO_TOKEN   # omit for public repos
+    required: true          # unavailable REQUIRED source => dependent reviews blocked
+
+  # An OPTIONAL, specialized source: only some claims depend on it, so a run may
+  # proceed (reporting those areas as unsupported) when it is absent.
+  - name: product-charm
+    repo: my-org/my-product-operator
+    ref: main
+    paths:
+      - "**"
+    auth: secret:PRODUCT_REPO_TOKEN
+    required: false
 
 # ---------------------------------------------------------------------------
 # Reporting. Findings from all tests are summarized together.
@@ -76,6 +96,24 @@ tests:
     # Which sources of truth (by name) this test compares against.
     sources:
       - product
+      - product-charm
+    # Optional explicit source-ownership map. Associates in-scope files / claim
+    # categories with the source(s) most likely to be AUTHORITATIVE for them, so
+    # the reviewer checks each area against the component that OWNS the behavior
+    # (the producer of an interface) and uses other sources only to corroborate.
+    # If omitted, every source in `sources` applies to all targets. Areas whose
+    # sources are all unavailable are reported per the source's `required` flag.
+    source_map:
+      - area: "Product commands and configuration"
+        paths:
+          - "reference/commands/**"
+        sources:
+          - product
+      - area: "Charm options and relations"
+        paths:
+          - "reference/charm/**"
+        sources:
+          - product-charm
     # How to treat auto-generated material within the targets:
     #   skip               - ignore it entirely
     #   annotate           - review it, but label findings as generated
