@@ -5,9 +5,9 @@ description: >
   and opens a GitHub issue if any step fails.
 on:
   workflow_dispatch:
-  schedule:
+#  schedule:
     # Weekly, Monday 06:00 UTC
-    - cron: "0 6 * * 1"
+#    - cron: "0 6 * * 1"
 
 permissions:
   contents: read
