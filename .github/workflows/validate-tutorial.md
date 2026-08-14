@@ -15,7 +15,7 @@ permissions:
 
 engine: copilot
 
-runs-on: [self-hosted, linux, edge]
+runs-on: [self-hosted, linux, amd64]
 timeout-minutes: 60
 
 # Optional hints — the agent falls back to runtime discovery when omitted.
