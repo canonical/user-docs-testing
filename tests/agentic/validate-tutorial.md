@@ -11,8 +11,9 @@ on:
 
 permissions:
   contents: read
+  copilot-requests: write
 
-engine: claude
+engine: copilot
 
 runs-on: [self-hosted, linux, edge]
 timeout-minutes: 60
