@@ -135,6 +135,22 @@ Locate any final section whose heading contains words like "Clean up",
 "Teardown", "Remove", or "Destroy". Mark those sections to be **skipped**
 during execution — the VM is torn down separately.
 
+### 2e. Detect tutorial-suggested Multipass usage
+
+The tutorial itself may instruct the reader to create a Multipass VM (e.g.,
+`multipass launch`, `multipass exec`). Because the agent already runs inside
+a fresh, isolated Ubuntu VM, nested Multipass is unavailable.
+
+If you detect tutorial steps that launch or exec into a Multipass VM:
+
+1. **Drop** the `multipass launch`, `multipass delete`, `multipass purge`,
+   and any other Multipass lifecycle commands from the executable list.
+2. **Unwrap** any `multipass exec <vm> -- <command>` steps — extract
+   `<command>` and run it directly on the current VM instead.
+3. Treat Multipass itself as a **skipped prerequisite** (do not attempt to
+   install it) and note in the report that the tutorial's Multipass steps
+   were executed directly on the host VM.
+
 ---
 
 ## Phase 3 — Set up the environment
@@ -184,6 +200,9 @@ VM.
   your report. There is no per-command timeout; the overall workflow timeout
   (60 minutes) is the safety net.
 - Do not modify any repository file.
+- If Phase 2e identified tutorial-suggested Multipass steps, run the
+  unwrapped commands directly on the VM rather than attempting nested
+  Multipass. The environment is already a fresh Ubuntu install.
 
 ---
 
