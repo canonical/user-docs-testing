@@ -1,14 +1,5 @@
 # Reference documentation completeness
 
-> **Status: validated against Landscape Server.** Found the entire `[features]`
-> section of `service.conf` undocumented: roughly eleven user-facing boolean
-> flags (`LANDSCAPE_FEATURES__*`, several with deprecated `enable-*` aliases)
-> defined in `canonical/landscape/settings/features_settings.py` and absent from
-> the reference set. `reference-review` cannot find this class of defect, because
-> it checks documented claims against the source, not the source against the
-> docs. Known refinement needed: ignore `ClassVar` annotations, which produced
-> twenty false positives from a `section_name` class attribute.
-
 A shipped agentic test. It checks whether the reference documentation *covers* the
 interface its sources expose — it looks for user-facing elements that exist in the
 source but are **missing** from the docs.

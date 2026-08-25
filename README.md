@@ -11,10 +11,9 @@ Tests are declared in a `docs-testing.config.yml` in your repo. Two kinds:
 - Agentic tests — a review by an AI engine, run through
   [GitHub Agentic Workflows](https://github.github.com/gh-aw/) (gh-aw). Each points
   at an instruction file describing what to check. The tool ships a set of these
-  under [tests/agentic/](tests/agentic/). For reference docs the shipped set is
-  `reference-review` (the general, default accuracy check — start here) plus the
-  focused `reference-completeness`, `reference-defaults`, `reference-consistency`,
-  and `reference-permissions`.
+  under [tests/agentic/](tests/agentic/). Two ship for reference docs:
+  `reference-review`, the general accuracy check, and `reference-completeness`,
+  which finds interface that exists in the source but is not documented.
 - Deterministic tests — a command that emits findings in a standard JSON schema
   (see [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md)). A few generic ones ship under
   [tests/deterministic/](tests/deterministic/): `broken_links.py` (relative-link

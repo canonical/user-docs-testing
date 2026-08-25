@@ -210,83 +210,16 @@ tests:
       - landscape-ui
     skip_deterministically_covered: true
 
-  # --- Focused agentic tests (left disabled; see each file's status note) --
-  # All four have now been run against Landscape Server. Results:
-  #   reference-completeness  WORTH ENABLING. Found the whole [features] section
-  #                           undocumented, which reference-review cannot find.
-  #   reference-permissions   Clean run, no findings, no over-reading.
-  #   reference-defaults      Redundant: same findings as reference-review.
-  #   reference-consistency   Not ready: five false positives, missed the one
-  #                           real contradiction.
-  # Left disabled so this example stays to one proven test. Enable them one at a
-  # time so a new test's findings can be judged on their own.
-  #
-  # Each imports its matching instruction file in your workflow, e.g.:
-  #   - canonical/user-docs-testing/tests/agentic/reference-completeness.md@main
-  # They all read the shared `source_map` above, so ownership is stated once.
-  # - name: reference-completeness
-  # type: agentic
-  # engine: copilot
-  # targets:
-  # - "docs/reference/**/*.md"
-  # exclude:
-  # - "docs/reference/release-notes/**"
-  # - "docs/reference/known-issues.md"
-  # - "docs/reference/_includes/**"
-  # sources:
-  # - landscape-client
-  # - landscape-server
-  # - landscape-server-operator
-  # - landscape-ui
-  # skip_deterministically_covered: true
-
-  # - name: reference-defaults
-  # type: agentic
-  # engine: copilot
-  # # Defaults/types/constraints live in the server config reference.
-  # targets:
-  # - "docs/reference/config/**/*.md"
-  # sources:
-  # - landscape-server
-  # skip_deterministically_covered: true
-
-  # - name: reference-consistency
-  # type: agentic
-  # engine: copilot
-  # targets:
-  # - "docs/reference/**/*.md"
-  # exclude:
-  # - "docs/reference/release-notes/**"
-  # - "docs/reference/known-issues.md"
-  # - "docs/reference/_includes/**"
-  # # Sources are optional here; when present they adjudicate cross-page conflicts.
-  # sources:
-  # - landscape-server
-  # - landscape-ui
-
-  # - name: reference-permissions
-  # type: agentic
-  # engine: copilot
-  # # Root/role/permission claims: lsctl (root), admin/roles terms, server config.
-  # targets:
-  # - "docs/reference/lsctl.md"
-  # - "docs/reference/terms/administrators.md"
-  # - "docs/reference/terms/roles.md"
-  # - "docs/reference/config/**/*.md"
-  # sources:
-  # - landscape-server
-  # skip_deterministically_covered: true
-
   # --- Deterministic source-availability check (RUN THIS FIRST) ------------
   # Machine-verified proof of which sources were actually checked out, including
   # the commit SHA of each one. Without it, nothing distinguishes "the agent read
   # the private server repo" from "the agent never opened it" — both would end in
   # the same conclusion. It blocks every source_map area whose owning source is
   # absent, before the agent runs, so those areas cannot be claimed as reviewed.
-  # - name: source-availability
-  # type: deterministic
-  # command: "python3 .docs-testing-tool/tests/deterministic/source_manifest.py --config docs-testing.config.yml --sources-root sources --output results/source-availability.json"
-  # results_file: "results/source-availability.json"
+  - name: source-availability
+    type: deterministic
+    command: "python3 .docs-testing-tool/tests/deterministic/source_manifest.py --config docs-testing.config.yml --sources-root sources --output results/source-availability.json"
+    results_file: "results/source-availability.json"
 
   # --- Deterministic broken-link check -------------------------------------
   # Uses the shipped script; your workflow must check out the tool repo (e.g.
@@ -294,7 +227,7 @@ tests:
   # this folder's fetched docs/ (see README.md).
   - name: reference-links
     type: deterministic
-    command: "python .docs-testing-tool/tests/deterministic/broken_links.py --targets 'docs/reference/**/*.md' --output results/reference-links.json"
+    command: "python3 .docs-testing-tool/tests/deterministic/broken_links.py --targets 'docs/reference/**/*.md' --output results/reference-links.json"
     results_file: "results/reference-links.json"
 
   # --- Deterministic surface-coverage check (optional) ---------------------
@@ -309,7 +242,7 @@ tests:
   # agentic reference-completeness test skips whatever this already reported.
   # - name: reference-surface-coverage
   #   type: deterministic
-  #   command: "python .docs-testing-tool/tests/deterministic/undocumented_surface.py --manifest sources/landscape-server/openapi.json --targets 'docs/reference/**/*.md' --output results/surface-coverage.json"
+  #   command: "python3 .docs-testing-tool/tests/deterministic/undocumented_surface.py --manifest sources/landscape-server/openapi.json --targets 'docs/reference/**/*.md' --output results/surface-coverage.json"
   #   results_file: "results/surface-coverage.json"
 
 # ---------------------------------------------------------------------------

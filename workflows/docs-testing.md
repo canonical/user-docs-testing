@@ -22,15 +22,9 @@ labels: ["docs-testing", "automation"]
 # Add one line per agentic test you want; remove the ones you don't. Available:
 #   reference-review        general accuracy/drift review (default; start here)
 #   reference-completeness  interface in source but undocumented
-#   reference-defaults      documented defaults, types, and constraints
-#   reference-consistency   pages agree with each other and across components
-#   reference-permissions   authentication / privilege / permission claims
 imports:
   - canonical/user-docs-testing/tests/agentic/reference-review.md@v1
   # - canonical/user-docs-testing/tests/agentic/reference-completeness.md@v1
-  # - canonical/user-docs-testing/tests/agentic/reference-defaults.md@v1
-  # - canonical/user-docs-testing/tests/agentic/reference-consistency.md@v1
-  # - canonical/user-docs-testing/tests/agentic/reference-permissions.md@v1
 
 on:
   # Manual trigger.

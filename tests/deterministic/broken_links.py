@@ -67,13 +67,14 @@ def find_targets(patterns: list[str], root: Path) -> list[Path]:
     return matched
 
 
-def check_file(doc: Path, root: Path) -> list[dict]:
+def check_file(doc: Path, root: Path, site_root: Path | None = None) -> list[dict]:
     findings: list[dict] = []
     try:
         lines = doc.read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeDecodeError):
         return findings
     rel_doc = doc.relative_to(root).as_posix()
+    seen: set[tuple[int, str]] = set()
     for lineno, line in enumerate(lines, start=1):
         for match in _MD_LINK_RE.finditer(line):
             target = match.group(1).strip().split(" ", 1)[0]
@@ -84,7 +85,19 @@ def check_file(doc: Path, root: Path) -> list[dict]:
             file_part = target.split("#", 1)[0]
             if not file_part:
                 continue
-            if not (doc.parent / file_part).resolve().exists():
+            if file_part.startswith("/"):
+                # Site-root-relative, not repo-relative. Resolving it against the
+                # document's directory is wrong, and without knowing where the
+                # site root maps to on disk it cannot be checked at all.
+                if site_root is None:
+                    continue
+                candidate = site_root / file_part.lstrip("/")
+            else:
+                candidate = doc.parent / file_part
+            if (lineno, file_part) in seen:
+                continue  # the same link twice on one line is one problem
+            seen.add((lineno, file_part))
+            if not candidate.resolve().exists():
                 findings.append(
                     {
                         "check": CHECK_ID,
@@ -109,15 +122,22 @@ def main(argv: list[str] | None = None) -> int:
         help="Glob(s) of docs to check (repeatable). Supports **.",
     )
     parser.add_argument("--root", default=".", help="Repo root (default: cwd).")
+    parser.add_argument(
+        "--site-root",
+        default=None,
+        help="Directory that a leading '/' in a link resolves to. Without it, "
+        "site-root-relative links are skipped rather than guessed at.",
+    )
     parser.add_argument("--output", required=True, help="Where to write results JSON.")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
+    site_root = Path(args.site_root).resolve() if args.site_root else None
     docs = find_targets(args.targets, root)
 
     findings: list[dict] = []
     for doc in docs:
-        findings.extend(check_file(doc, root))
+        findings.extend(check_file(doc, root, site_root))
 
     results = {
         "tool": "broken-links",

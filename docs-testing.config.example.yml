@@ -163,28 +163,13 @@ tests:
   #   engine: copilot
   #   targets: ["reference/**/*.md"]
   #   sources: [product]
-  # - name: reference-defaults       # documented defaults / types / constraints
-  #   type: agentic
-  #   engine: copilot
-  #   targets: ["reference/**/*.md"]
-  #   sources: [product]
-  # - name: reference-consistency    # pages agree with each other / across repos
-  #   type: agentic
-  #   engine: copilot
-  #   targets: ["reference/**/*.md"]
-  #   sources: [product]            # optional for this test
-  # - name: reference-permissions    # auth / privilege / permission claims
-  #   type: agentic
-  #   engine: copilot
-  #   targets: ["reference/**/*.md"]
-  #   sources: [product]
 
   # --- A shipped deterministic test -----------------------------------------
   # Uses a script from the tool repo, so your workflow must check it out (the
   # optional `.user-docs-testing` checkout) and enable the deterministic steps.
   - name: reference-links
     type: deterministic
-    command: "python .user-docs-testing/tests/deterministic/broken_links.py --targets 'reference/**/*.md' --output results/reference-links.json"
+    command: "python3 .user-docs-testing/tests/deterministic/broken_links.py --targets 'reference/**/*.md' --output results/reference-links.json"
     results_file: "results/reference-links.json"
 
   # --- Your own deterministic test ------------------------------------------
@@ -193,7 +178,7 @@ tests:
   # Use `setup` for any commands needed to prepare THIS test.
   # - name: commands-documented
   #   type: deterministic
-  #   command: "python scripts/check_commands.py --output results/commands.json"
+  #   command: "python3 scripts/check_commands.py --output results/commands.json"
   #   results_file: "results/commands.json"
   #   setup:
   #     - "pip install -r scripts/requirements.txt"

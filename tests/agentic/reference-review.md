@@ -5,9 +5,9 @@ truth that *owns* each documented behavior, and reports where the documentation
 contradicts it.
 
 This is the **general, default** reference test. If you run only one reference
-test, run this one. The focused tests (`reference-completeness`,
-`reference-defaults`, `reference-consistency`, `reference-permissions`) are
-sharper within their narrower remit; this one is the safety net.
+test, run this one. It catches documented claims that the source contradicts.
+The companion test, `reference-completeness`, catches the opposite direction:
+interface that exists in the source but is missing from the docs.
 
 ## Inputs
 
