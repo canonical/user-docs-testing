@@ -24,14 +24,14 @@ A test writes an object like this to the path named by its `results_file`:
   },
   "findings": [
     {
-      "check": "broken-relative-link",
-      "severity": "error",
+      "check": "undocumented-surface-element",
+      "severity": "warning",
       "doc_file": "reference/cli.md",
-      "doc_line": 87,
-      "source": null,
-      "source_ref": null,
-      "message": "Link target 'options.md' does not exist.",
-      "covered_topic": "reference/cli.md#options"
+      "doc_line": null,
+      "source": "product",
+      "source_ref": "openapi.json",
+      "message": "Interface element not documented in reference targets: --retries",
+      "covered_topic": "surface:--retries"
     }
   ],
   "coverage": [

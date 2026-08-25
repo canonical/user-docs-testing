@@ -42,11 +42,13 @@ against this folder's `docs/` and `sources/`.
   `landscape-server-operator`, `landscape-ui`) into `sources/` to unlock
   server-side coverage and real drift detection.
 
-The deterministic broken-link check can be run directly:
+The deterministic source-availability check can be run directly. It reports which
+sources were actually checked out, and at which commit:
 
 ```bash
-python ../../tests/deterministic/broken_links.py \
-  --targets 'docs/reference/**/*.md' --output results/reference-links.json
+python3 ../../tests/deterministic/source_manifest.py \
+  --config docs-testing.config.yml --sources-root sources \
+  --output results/source-availability.json
 ```
 
 See the comments in [`docs-testing.config.yml`](docs-testing.config.yml) for the

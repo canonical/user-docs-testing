@@ -167,10 +167,13 @@ tests:
   # --- A shipped deterministic test -----------------------------------------
   # Uses a script from the tool repo, so your workflow must check it out (the
   # optional `.user-docs-testing` checkout) and enable the deterministic steps.
-  - name: reference-links
+  # This one records which sources were actually checked out, and at which
+  # commit, so an agentic test cannot claim to have reviewed material against a
+  # source that was never there. Run it before the agent.
+  - name: source-availability
     type: deterministic
-    command: "python3 .user-docs-testing/tests/deterministic/broken_links.py --targets 'reference/**/*.md' --output results/reference-links.json"
-    results_file: "results/reference-links.json"
+    command: "python3 .user-docs-testing/tests/deterministic/source_manifest.py --config docs-testing.config.yml --sources-root sources --output results/source-availability.json"
+    results_file: "results/source-availability.json"
 
   # --- Your own deterministic test ------------------------------------------
   # Any command, in any language, that writes the schema in RESULTS-SCHEMA.md.

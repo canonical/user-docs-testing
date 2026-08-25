@@ -221,15 +221,6 @@ tests:
     command: "python3 .docs-testing-tool/tests/deterministic/source_manifest.py --config docs-testing.config.yml --sources-root sources --output results/source-availability.json"
     results_file: "results/source-availability.json"
 
-  # --- Deterministic broken-link check -------------------------------------
-  # Uses the shipped script; your workflow must check out the tool repo (e.g.
-  # under .docs-testing-tool) to provide it. For a LOCAL trial, run it against
-  # this folder's fetched docs/ (see README.md).
-  - name: reference-links
-    type: deterministic
-    command: "python3 .docs-testing-tool/tests/deterministic/broken_links.py --targets 'docs/reference/**/*.md' --output results/reference-links.json"
-    results_file: "results/reference-links.json"
-
   # --- Deterministic surface-coverage check (optional) ---------------------
   # The precise, repeatable counterpart to the agentic reference-completeness
   # test, for surfaces that are machine-enumerable. Point --manifest at an

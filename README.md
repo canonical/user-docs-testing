@@ -15,12 +15,13 @@ Tests are declared in a `docs-testing.config.yml` in your repo. Two kinds:
   `reference-review`, the general accuracy check, and `reference-completeness`,
   which finds interface that exists in the source but is not documented.
 - Deterministic tests — a command that emits findings in a standard JSON schema
-  (see [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md)). A few generic ones ship under
-  [tests/deterministic/](tests/deterministic/): `broken_links.py` (relative-link
-  targets that don't exist) and `undocumented_surface.py` (the precise counterpart
-  to `reference-completeness` — diffs a machine-readable interface manifest, e.g.
-  OpenAPI/`--help`/JSON Schema, against the docs). Most deterministic checks are
-  specific to a project, so you'll usually add your own.
+  (see [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md)). Two ship under
+  [tests/deterministic/](tests/deterministic/): `source_manifest.py` (records
+  which sources were actually checked out, and at which commit) and
+  `undocumented_surface.py` (the precise counterpart to `reference-completeness`
+  — diffs a machine-readable interface manifest, e.g. OpenAPI/`--help`/JSON
+  Schema, against the docs). Most deterministic checks are specific to a project,
+  so you'll usually add your own.
 
 Choose which tests to run, and point them at your docs, in your config.
 
