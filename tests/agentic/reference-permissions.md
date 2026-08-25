@@ -1,5 +1,12 @@
 # Reference documentation permissions
 
+> **Status: validated, no findings.** Run against the Landscape CLI and access
+> control reference it reported nothing, correctly: the documented root
+> requirement for `lsctl` matches the privilege check in the script, and the file
+> ownership claims match the configured service user. It also declined to
+> over-read the conceptual role and administrator pages, which state no
+> enforcement claim that maps to a specific location in the source.
+
 A shipped agentic test. It verifies documented **authentication, privilege, and
 permission** requirements against how the source actually enforces them. Wrong
 permission docs are high-cost — either users hit avoidable failures, or they

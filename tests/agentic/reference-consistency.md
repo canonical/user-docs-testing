@@ -1,5 +1,13 @@
 # Reference documentation consistency
 
+> **Status: validated, and not yet good enough to enable.** Run against the
+> Landscape config reference it produced five contradictions, all false: the same
+> key name legitimately holds different values in different sections, so
+> `[broker] password` and `[stores] password` are not a contradiction. It also
+> missed the one real inter-page contradiction present, because that page
+> identifies settings by environment variable name rather than by section and
+> key. Comparing claims requires resolving them to a section and key first.
+
 A shipped agentic test. It checks that the reference set is **consistent** — that
 pages agree with each other, that cross-references resolve, that terminology is used
 uniformly, and that components which share an interface do not contradict each other.

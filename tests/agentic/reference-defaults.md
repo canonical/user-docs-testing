@@ -1,5 +1,12 @@
 # Reference defaults and constraints
 
+> **Status: validated, and redundant in practice.** A systematic sweep of every
+> documented default in the Landscape config reference against the settings
+> classes produced the same discrepancies `reference-review` already reports
+> unaided. It found nothing `reference-review` missed. Prefer keeping the value
+> and constraint checking inside `reference-review` rather than running this as a
+> second pass over the same material.
+
 A shipped agentic test. It verifies documented **default values, types, allowed
 values, ranges, units, and required/optional status** against the source that
 defines them. Defaults and constraints rot quietly; this test pins them to the
