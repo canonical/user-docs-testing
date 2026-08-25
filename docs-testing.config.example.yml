@@ -62,6 +62,38 @@ sources:
     required: false
 
 # ---------------------------------------------------------------------------
+# Source ownership: which component OWNS which documentation.
+#
+# Define this ONCE here and every reference-oriented agentic test uses it. A test
+# then checks each area against the component that PRODUCES the interface, using
+# other sources only to corroborate. Without it, each test has to guess, and the
+# same ownership facts get copied into every test.
+#
+# Each entry maps documentation paths (or a claim category) to the source(s)
+# authoritative for them. Order matters only for readability; matching is by path.
+#   - An area whose sources are all unavailable is reported per each source's
+#     `required` flag (blocked if required, unsupported if optional).
+#   - `sources: []` means "no configured source owns this" -> reported as
+#     unsupported-by-configured-sources, never as passing.
+#   - Paths not matched by any entry fall back to the test's own `sources` list.
+#
+# A test may add or override entries with its own `source_map:` (same shape) when
+# it genuinely needs test-specific ownership; a test-level entry wins for the
+# paths it matches. Most tests should not need one.
+# ---------------------------------------------------------------------------
+source_map:
+  - area: "Product commands and configuration"
+    paths:
+      - "reference/commands/**"
+    sources:
+      - product
+  - area: "Charm options and relations"
+    paths:
+      - "reference/charm/**"
+    sources:
+      - product-charm
+
+# ---------------------------------------------------------------------------
 # Reporting. Findings from all tests are summarized together.
 #   check-run - GitHub Check Run with a pass/fail conclusion (CI-gating). Default.
 #   issue     - open a GitHub issue summarizing findings.
@@ -70,6 +102,12 @@ sources:
 reporting:
   mode: check-run
   fail_on_findings: true          # set false to report without failing CI
+  # What conclusion to use when nothing failed but required review coverage is
+  # missing (a blocked or unsupported area). It must NOT be `success` — that
+  # would read as "checked and correct". `neutral` (default) is visibly not a
+  # pass but does not block a required check; use `action_required` if you want
+  # incomplete coverage to gate merges.
+  on_incomplete_coverage: neutral
   title: "Docs testing"
   labels:
     - "docs-testing"
@@ -93,27 +131,19 @@ tests:
       - "reference/**/*.md"
     exclude:
       - "reference/legacy/**"
-    # Which sources of truth (by name) this test compares against.
+    # Which sources of truth (by name) this test compares against. Ownership of
+    # each area comes from the shared top-level `source_map`; this list just
+    # narrows which sources the test may use at all.
     sources:
       - product
       - product-charm
-    # Optional explicit source-ownership map. Associates in-scope files / claim
-    # categories with the source(s) most likely to be AUTHORITATIVE for them, so
-    # the reviewer checks each area against the component that OWNS the behavior
-    # (the producer of an interface) and uses other sources only to corroborate.
-    # If omitted, every source in `sources` applies to all targets. Areas whose
-    # sources are all unavailable are reported per the source's `required` flag.
-    source_map:
-      - area: "Product commands and configuration"
-        paths:
-          - "reference/commands/**"
-        sources:
-          - product
-      - area: "Charm options and relations"
-        paths:
-          - "reference/charm/**"
-        sources:
-          - product-charm
+    # Optional: test-specific ownership overrides, same shape as the top-level
+    # `source_map`. Omit it unless this test really needs different ownership
+    # from the rest of the project.
+    # source_map:
+    #   - area: "Charm options and relations"
+    #     paths: ["reference/charm/**"]
+    #     sources: [product-charm]
     # How to treat auto-generated material within the targets:
     #   skip               - ignore it entirely
     #   annotate           - review it, but label findings as generated

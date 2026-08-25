@@ -39,6 +39,12 @@ except ImportError:  # pragma: no cover
 
 SCHEMA_VERSION = 1
 
+# Coverage states that mean "this area was not actually verified".
+INCOMPLETE_STATES = {
+    "blocked-required-source-unavailable",
+    "unsupported-by-configured-sources",
+}
+
 
 def load_config(path: Path) -> dict:
     with path.open(encoding="utf-8") as fh:
@@ -59,22 +65,25 @@ def run_commands(commands: list[str], *, label: str) -> None:
         subprocess.run(cmd, shell=True, check=True)
 
 
-def read_results(path: Path, test_name: str) -> list[dict]:
-    """Read one test's results file and return its findings, tagged with the test."""
+def read_results(path: Path, test_name: str) -> tuple[list[dict], list[dict], list[dict]]:
+    """Read one test's results file: findings, coverage, and source evidence."""
     if not path.exists():
         sys.stderr.write(
             f"warning: test '{test_name}' produced no results file at {path}\n"
         )
-        return []
+        return [], [], []
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         sys.stderr.write(f"warning: could not read results for '{test_name}': {exc}\n")
-        return []
+        return [], [], []
     findings = data.get("findings", []) or []
-    for finding in findings:
-        finding.setdefault("test", test_name)
-    return findings
+    coverage = data.get("coverage", []) or []
+    evidence = data.get("source_evidence", []) or []
+    for item in (*findings, *coverage):
+        item.setdefault("test", test_name)
+    return findings, coverage, evidence
+
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -101,6 +110,8 @@ def main(argv: list[str] | None = None) -> int:
     tests = deterministic_tests(config)
 
     all_findings: list[dict] = []
+    all_coverage: list[dict] = []
+    all_evidence: list[dict] = []
     tests_run = 0
 
     for test in tests:
@@ -121,18 +132,33 @@ def main(argv: list[str] | None = None) -> int:
         tests_run += 1
         results_file = test.get("results_file")
         if results_file:
-            all_findings.extend(read_results(Path(results_file), name))
+            findings, coverage, evidence = read_results(Path(results_file), name)
+            all_findings.extend(findings)
+            all_coverage.extend(coverage)
+            all_evidence.extend(evidence)
 
-    has_error = any(f.get("severity") == "error" for f in all_findings)
+    # A run must not read as a clean pass when material could not be verified,
+    # so incomplete coverage outranks pass. See RESULTS-SCHEMA.md.
+    incomplete = [c for c in all_coverage if c.get("state") in INCOMPLETE_STATES]
+    if any(f.get("severity") == "error" for f in all_findings):
+        status = "fail"
+    elif incomplete:
+        status = "incomplete"
+    else:
+        status = "pass"
+
     combined = {
         "tool": "user-docs-testing",
         "schema_version": SCHEMA_VERSION,
         "summary": {
             "tests_run": tests_run,
             "findings": len(all_findings),
-            "status": "fail" if has_error else "pass",
+            "coverage_incomplete": len(incomplete),
+            "status": status,
         },
         "findings": all_findings,
+        "coverage": all_coverage,
+        "source_evidence": all_evidence,
     }
 
     output = Path(args.output)
@@ -141,9 +167,11 @@ def main(argv: list[str] | None = None) -> int:
 
     sys.stderr.write(
         f"ran {tests_run} deterministic test(s), "
-        f"{len(all_findings)} finding(s) -> {output}\n"
+        f"{len(all_findings)} finding(s), "
+        f"{len(incomplete)} unverified area(s) -> {output} [{status}]\n"
     )
     return 0
+
 
 
 if __name__ == "__main__":

@@ -67,34 +67,33 @@ engine: copilot
 
 # Check out the repositories the run needs.
 checkout:
-  # Your repository: documentation and docs-testing.config.yml.
-  - repo: ${{ github.repository }}
+  # Your repository: documentation and docs-testing.config.yml (primary target).
+  - current: true
 
   # Your source-of-truth repo(s). One block per source in your config. A private
   # source needs its OWN read token (Contents: Read) — this is separate from the
   # engine token above, and a personal fine-grained PAT cannot span orgs. Use a
   # secret for private repos; omit `token` for public ones. Example:
   #
-  # - repo: my-org/my-product
+  # - repository: my-org/my-product
   #   ref: main
   #   path: sources/product
-  #   token: ${{ secrets.PRODUCT_REPO_TOKEN }}
+  #   token: ${{ secrets.SOURCE_REPO_TOKEN }}
   #
   # Match each block to a `sources:` entry in docs-testing.config.yml. If a
   # source is REQUIRED there and its checkout fails, the runs that depend on it
-  # are incomplete — the agent reports those files as blocked, never as passing.
-  # For an OPTIONAL source (`required: false`), you may add `continue-on-error:
-  # true` so a failed checkout does not fail the job; the agent then reports the
-  # dependent areas as unsupported. Never expose a private source token to an
-  # untrusted fork (see the SECURITY note under `on:`).
+  # are incomplete — the agent reports those files as blocked, never as passing,
+  # and the check run concludes with `reporting.on_incomplete_coverage` rather
+  # than `success`. Never expose a private source token to an untrusted fork
+  # (see the SECURITY note under `on:`).
 
   # Only if you run a *shipped* deterministic test: check out the (public) tool
   # repo to get run_tests.py and the shipped check scripts. Not needed for
   # agentic-only setups, or when your deterministic scripts live in your repo.
   #
-  # - repo: canonical/user-docs-testing
-  #   ref: v1
-  #   path: .user-docs-testing
+  # - repository: canonical/user-docs-testing
+  #   ref: main
+  #   path: .docs-testing-tool
 
 # Deterministic layer (OPTIONAL). Uncomment if your config declares deterministic
 # tests. It runs the orchestrator before the agent, writing combined findings to
@@ -130,14 +129,16 @@ criteria, and do not impose criteria of your own.
 
 Follow these steps:
 
-1. **Read the config.** Load `docs-testing.config.yml`. For each test with
-   `type: agentic`, note its `name`, `targets`/`exclude`, `sources`, `generated`
-   policy, and the `reporting` settings. Sources of truth are checked out under
-   `sources/`.
+1. **Read the config.** Load `docs-testing.config.yml`. Note the top-level
+   `sources` (with each one's `required` flag), the shared `source_map` that says
+   which source owns which documentation, and the `reporting` settings. For each
+   test with `type: agentic`, note its `name`, `targets`/`exclude`, `sources`,
+   `generated` policy, and any test-level `source_map`. Sources of truth are
+   checked out under `sources/`.
 
 2. **Read the deterministic results, if any.** If `results/all.json` exists, it
-   holds findings from deterministic tests that ran before you. Use it both to
-   report and to avoid duplicating work.
+   holds findings from deterministic tests that ran before you, plus their
+   `coverage` entries. Use it both to report and to avoid duplicating work.
 
 3. **Run each agentic test.** For every configured agentic test, apply the
    matching instructions from above to the files in its `targets` (minus
@@ -147,14 +148,23 @@ Follow these steps:
    - If `skip_deterministically_covered` is true, do not re-report anything whose
      topic already appears as a `covered_topic` in `results/all.json`.
 
-4. **Report once.** Emit a single `create_check_run` that combines the
-   deterministic findings and your agentic findings:
-   - `conclusion: failure` if there are findings and `reporting.fail_on_findings`
-     is true.
-   - `conclusion: neutral` if there are findings but failing is disabled.
-   - `conclusion: success` if no findings.
+4. **Report once.** Emit a single `create_check_run` combining the deterministic
+   and agentic results. Pick the conclusion in this order — the three outcomes
+   must stay distinct:
+   - `failure` — there are findings and `reporting.fail_on_findings` is true.
+     ("We found a problem.")
+   - `reporting.on_incomplete_coverage` (default `neutral`) — no findings, but at
+     least one area is `blocked-required-source-unavailable` or
+     `unsupported-by-configured-sources`, in either `results/all.json` coverage
+     or an agentic test's classification. ("We could not establish whether it is
+     correct.") Never report `success` in this case.
+   - `neutral` — there are findings but `fail_on_findings` is false.
+   - `success` — every in-scope area was reviewed and nothing was found.
+     ("We checked it and it appears correct.")
    - The summary must group findings by test and by documentation file, each with
-     a one-line description and any supporting evidence.
+     a one-line description and any supporting evidence, and must list blocked or
+     unsupported areas separately so a reader can see what was NOT verified.
 
-If nothing needs action, you MUST still emit a `create_check_run` with
-`conclusion: success`.
+If nothing needs action, you MUST still emit a `create_check_run`, using the
+conclusion chosen by the rules above.
+

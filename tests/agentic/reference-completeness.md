@@ -14,14 +14,15 @@ point its `targets` at your reference docs, and its `sources` at what they descr
 - Each configured source of truth is checked out under `sources/<name>/`. A
   source directory may be missing or empty if that source could not be cloned,
   authenticated, or read.
-- The project configuration is in `docs-testing.config.yml`. This test's entry in
+- The project configuration is in `docs-testing.config.yml`. The top-level
+  `source_map` says which source(s) OWN which documentation paths — it is shared
+  by all reference tests, so use it as the ownership map. This test's entry in
   the `tests` list tells you:
   - `targets` / `exclude` — which files are in scope.
   - `generated` — auto-generated material and how to treat it.
-  - `sources` — which sources of truth (by name) to compare against.
-  - `source_map` (optional) — an explicit ownership map associating in-scope
-    files / claim categories with the source(s) most likely to be AUTHORITATIVE
-    for them. When present, prefer it when deciding which source owns an area.
+  - `sources` — which sources of truth (by name) this test may use.
+  - `source_map` (optional) — test-specific ownership overrides, same shape as
+    the top-level map; a test-level entry wins for the paths it matches.
 - The `sources:` list marks each source `required` (default) or optional
   (`required: false`).
 - Any deterministic findings are in `results/all.json`.
@@ -29,9 +30,9 @@ point its `targets` at your reference docs, and its `sources` at what they descr
 ## Establish source ownership first
 
 For each in-scope area, decide which configured source *produces* the interface it
-documents (use `source_map` when present, otherwise infer). You can only judge
-completeness of an area against the source that owns its surface. A missing
-element in one source may simply belong to a different component.
+documents (use the shared `source_map`, and infer only for paths it does not
+cover). You can only judge completeness of an area against the source that owns its
+surface. A missing element in one source may simply belong to a different component.
 
 ## What to do
 
@@ -112,9 +113,12 @@ Classify each in-scope area into exactly one coverage state (see
 Then report:
 
 - `failure` if you found at least one undocumented element and
-  `reporting.fail_on_findings` is true; otherwise `neutral`.
+  `reporting.fail_on_findings` is true.
+- Otherwise `reporting.on_incomplete_coverage` (default `neutral`) if any area is
+  blocked or unsupported — never `success` for an area whose surface you could
+  not enumerate.
 - `success` only if every in-scope area is reviewed-and-supported or
-  skipped-by-policy. Never report `success` for a blocked or unsupported area.
+  skipped-by-policy.
 - For each finding include: the undocumented source element (name plus
   `sources/<name>/<path>` or symbol), the area it belongs to, and a one-line note.
 - Use `severity: warning` for undocumented surface — it is a coverage gap, not a

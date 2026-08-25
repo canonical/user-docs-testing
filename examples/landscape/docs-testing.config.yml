@@ -77,7 +77,7 @@ sources:
     ref: main
     paths:
       - "**"
-    auth: secret:LANDSCAPE_SOURCE_TOKEN
+    auth: secret:SOURCE_REPO_TOKEN
     required: true
 
   # --- Private: Landscape Server charm -------------------------------------
@@ -89,7 +89,7 @@ sources:
     ref: main
     paths:
       - "**"
-    auth: secret:LANDSCAPE_SOURCE_TOKEN
+    auth: secret:SOURCE_REPO_TOKEN
     required: false
 
   # --- Private: Landscape UI -----------------------------------------------
@@ -101,7 +101,7 @@ sources:
     ref: main
     paths:
       - "**"
-    auth: secret:LANDSCAPE_SOURCE_TOKEN
+    auth: secret:SOURCE_REPO_TOKEN
     required: false
 
   # --- Private: packaging / release policy (optional placeholders) ----------
@@ -111,14 +111,65 @@ sources:
   #   repo: canonical/landscape-bundles
   #   ref: main
   #   paths: ["**"]
-  #   auth: secret:LANDSCAPE_SOURCE_TOKEN
+  #   auth: secret:SOURCE_REPO_TOKEN
   #   required: false
   # - name: landscape-scripts
   #   repo: canonical/landscape-scripts
   #   ref: main
   #   paths: ["**"]
-  #   auth: secret:LANDSCAPE_SOURCE_TOKEN
+  #   auth: secret:SOURCE_REPO_TOKEN
   #   required: false
+
+# ---------------------------------------------------------------------------
+# Source ownership, defined ONCE for every reference test in this config.
+# Each reference area is checked against the component that OWNS it (the
+# producer), using other sources only to corroborate. Ownership below was
+# derived from the actual Landscape reference docs — e.g. the `config/` pages
+# document the server's `service.conf` and LANDSCAPE_* variables, so they are
+# SERVER-owned, not client-owned. Confirm ownership against the real repos
+# before relying on it.
+# ---------------------------------------------------------------------------
+source_map:
+  - area: "Server configuration (service.conf, LANDSCAPE_* env vars)"
+    paths:
+      - "docs/reference/config/**"
+    sources:
+      - landscape-server
+  - area: "Landscape Server CLI (lsctl and friends)"
+    paths:
+      - "docs/reference/lsctl.md"
+    sources:
+      - landscape-server
+  - area: "Database reference (schema, tables, migrations)"
+    paths:
+      - "docs/reference/database.md"
+    sources:
+      - landscape-server
+  - area: "Server services, processes, and logs"
+    paths:
+      - "docs/reference/logs.md"
+      - "docs/reference/networking/**"
+    sources:
+      - landscape-server
+  - area: "Server charm options and relations"
+    paths:
+      - "docs/reference/charm/**"
+    sources:
+      - landscape-server-operator
+  - area: "Web-portal terminology and domain concepts"
+    paths:
+      - "docs/reference/terms/**"
+    sources:
+      # Server owns the semantics; the UI owns the current field labels.
+      - landscape-server
+      - landscape-ui
+  - area: "Supported versions, PPAs, and package policy"
+    paths:
+      - "docs/reference/supported-versions-and-ppas.md"
+    # No authoritative source is configured above (packaging sources are left as
+    # optional placeholders), so this area is reported as
+    # unsupported-by-configured-sources until you add and map one.
+    sources: []
 
 # ---------------------------------------------------------------------------
 # Reporting.
@@ -126,12 +177,15 @@ sources:
 reporting:
   mode: check-run
   fail_on_findings: true
+  # Blocked/unsupported areas must not look like a pass. See RESULTS-SCHEMA.md.
+  on_incomplete_coverage: neutral
   title: "Landscape docs testing"
   labels:
     - "docs-testing"
 
 # ---------------------------------------------------------------------------
-# Tests.
+# Tests. Ownership comes from the shared `source_map` above; each test only
+# declares which sources it may use and what it covers.
 # ---------------------------------------------------------------------------
 tests:
   # --- Agentic reference review --------------------------------------------
@@ -154,59 +208,12 @@ tests:
       - landscape-server
       - landscape-server-operator
       - landscape-ui
-    # Explicit source-ownership map: each reference area is checked against the
-    # component that OWNS it (the producer), using other sources only to
-    # corroborate. Ownership below was verified against the actual Landscape
-    # reference docs — e.g. the `config/` pages document the server's
-    # `service.conf` and LANDSCAPE_* variables, so they are SERVER-owned, not
-    # client-owned. Confirm ownership against the real repos before relying on it.
-    source_map:
-      - area: "Server configuration (service.conf, LANDSCAPE_* env vars)"
-        paths:
-          - "docs/reference/config/**"
-        sources:
-          - landscape-server
-      - area: "Landscape Server CLI (lsctl and friends)"
-        paths:
-          - "docs/reference/lsctl.md"
-        sources:
-          - landscape-server
-      - area: "Database reference (schema, tables, migrations)"
-        paths:
-          - "docs/reference/database.md"
-        sources:
-          - landscape-server
-      - area: "Server services, processes, and logs"
-        paths:
-          - "docs/reference/logs.md"
-          - "docs/reference/networking/**"
-        sources:
-          - landscape-server
-      - area: "Server charm options and relations"
-        paths:
-          - "docs/reference/charm/**"
-        sources:
-          - landscape-server-operator
-      - area: "Web-portal terminology and domain concepts"
-        paths:
-          - "docs/reference/terms/**"
-        sources:
-          # Server owns the semantics; the UI owns the current field labels.
-          - landscape-server
-          - landscape-ui
-      - area: "Supported versions, PPAs, and package policy"
-        paths:
-          - "docs/reference/supported-versions-and-ppas.md"
-        # No authoritative source is configured above (packaging sources are left
-        # as optional placeholders), so this area is reported as
-        # unsupported-by-configured-sources until you add and map one.
-        sources: []
     skip_deterministically_covered: true
 
   # --- Focused agentic tests (optional, sharper than the general review) ----
   # Each imports its matching instruction file in your workflow, e.g.:
   #   - canonical/user-docs-testing/tests/agentic/reference-completeness.md@main
-  # Ownership is inferred the same way as the general test's source_map above.
+  # They all read the shared `source_map` above, so ownership is stated once.
   - name: reference-completeness
     type: agentic
     engine: copilot
@@ -260,6 +267,17 @@ tests:
       - landscape-server
     skip_deterministically_covered: true
 
+  # --- Deterministic source-availability check (RUN THIS FIRST) ------------
+  # Machine-verified proof of which sources were actually checked out, including
+  # the commit SHA of each one. Without it, nothing distinguishes "the agent read
+  # the private server repo" from "the agent never opened it" — both would end in
+  # the same conclusion. It blocks every source_map area whose owning source is
+  # absent, before the agent runs, so those areas cannot be claimed as reviewed.
+  - name: source-availability
+    type: deterministic
+    command: "python3 .docs-testing-tool/tests/deterministic/source_manifest.py --config docs-testing.config.yml --sources-root sources --output results/source-availability.json"
+    results_file: "results/source-availability.json"
+
   # --- Deterministic broken-link check -------------------------------------
   # Uses the shipped script; your workflow must check out the tool repo (e.g.
   # under .docs-testing-tool) to provide it. For a LOCAL trial, run it against
@@ -307,9 +325,11 @@ tests:
 # Because landscape-server is REQUIRED, if it cannot be cloned/authenticated the
 # agent reports the server-side files as blocked-required-source-unavailable
 # (incomplete) — it must NOT pass them, and must NOT invent findings to explain
-# the gap. This example should only be described as a complete, source-backed
-# Landscape reference review once the private landscape-server source (and any
-# other required sources) were accessed successfully.
+# the gap. With no discrepancies found, such a run concludes `neutral`, not
+# `success`: nothing was proven wrong, but the review is not complete. This
+# example should only be described as a complete, source-backed Landscape
+# reference review once the private landscape-server source (and any other
+# required sources) were accessed successfully.
 #
 # PRIVATE-SOURCE SETUP (do before relying on the private areas):
 #   1. Create a canonical-owned fine-grained PAT with Contents: Read on the
@@ -317,9 +337,9 @@ tests:
 #      landscape-ui, and any packaging repos you enable). SSO-authorize it for
 #      the canonical org if SAML is enforced.
 #   2. Store it as the repository/org secret named by `auth:` above
-#      (LANDSCAPE_SOURCE_TOKEN), or use per-source least-privilege secrets.
+#      (SOURCE_REPO_TOKEN), or use per-source least-privilege secrets.
 #   3. Add one checkout block per source in your workflow, passing
-#      `token: ${{ secrets.LANDSCAPE_SOURCE_TOKEN }}` for the private ones.
+#      `token: ${{ secrets.SOURCE_REPO_TOKEN }}` for the private ones.
 #   4. Keep private-source runs on TRUSTED events only. A pull request from an
 #      untrusted fork must not be able to edit this config or the workflow and
 #      then read private repos with the token (see the SECURITY note in

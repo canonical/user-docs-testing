@@ -20,15 +20,17 @@ your reference docs.
   - `targets` / `exclude` — which files are in scope.
   - `generated` — auto-generated material and how to treat it.
   - `sources` — sources of truth (by name) used only to adjudicate, if configured.
-  - `source_map` (optional) — an explicit ownership map; when present, use it to
-    decide which source (if available) owns a contested claim.
+  - `source_map` (optional) — test-specific ownership overrides. Ownership is
+    normally stated once in the top-level `source_map`; use it to decide which
+    source (if available) owns a contested claim.
 - Any deterministic findings are in `results/all.json`.
 
 ## Establish source ownership first
 
 Consistency findings do not require a source. But when you must decide which of two
 conflicting statements is correct, identify the source that *produces* the contested
-claim (use `source_map` when present, otherwise infer) and consult it if available.
+claim (use the shared `source_map`, and infer only for paths it does not cover) and
+consult it if available.
 
 ## What to do
 
@@ -91,7 +93,9 @@ Classify each in-scope area into exactly one coverage state (see
 Then report:
 
 - `failure` if you found at least one contradiction and `reporting.fail_on_findings`
-  is true; otherwise `neutral`.
+  is true.
+- Otherwise `reporting.on_incomplete_coverage` (default `neutral`) if a
+  cross-component adjudication was blocked or unsupported.
 - `success` only if every in-scope area is reviewed-and-supported or
   skipped-by-policy. A run with no configured source can still legitimately reach
   `success` on internal consistency, or `failure` on internal contradictions.

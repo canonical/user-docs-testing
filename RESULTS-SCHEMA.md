@@ -33,12 +33,22 @@ A test writes an object like this to the path named by its `results_file`:
       "message": "Link target 'options.md' does not exist.",
       "covered_topic": "reference/cli.md#options"
     }
+  ],
+  "coverage": [
+    {
+      "area": "reference/cli.md",
+      "state": "reviewed-and-supported",
+      "sources": ["product"],
+      "detail": null
+    }
   ]
 }
 ```
 
 Only `findings` is strictly required by the orchestrator; the rest is
-recommended for standalone runs and debugging.
+recommended for standalone runs and debugging. `coverage` is optional but is what
+keeps an unverifiable area from being reported as a clean pass — see
+"Coverage" below.
 
 ## Finding fields
 
@@ -67,24 +77,30 @@ The orchestrator writes a merged file (default `results/all.json`):
   "summary": {
     "tests_run": 2,
     "findings": 1,
+    "coverage_incomplete": 0,
     "status": "fail"
   },
-  "findings": [ /* every test's findings, each tagged with "test" */ ]
+  "findings": [ /* every test's findings, each tagged with "test" */ ],
+  "coverage": [ /* every test's coverage entries, each tagged with "test" */ ]
 }
 ```
 
-`summary.status` is `fail` if any finding has `severity: error`, otherwise
-`pass`.
-
-## Coverage status vocabulary
+## Coverage
 
 A pass/fail status answers "did anything fail?" but not "what was actually
 reviewed?". Reviews are not always whole-repository: some files can be verified
 against an available source while others cannot, because a source is optional,
 unavailable, or not authoritative for that material.
 
-Tests (deterministic or agentic) that want to express *coverage* should classify
-each reviewed file or claim category as one of:
+Any test — deterministic or agentic — may therefore report a `coverage` list
+alongside its findings. Each entry classifies one file, glob, or claim category:
+
+| Field     | Required | Description                                                          |
+| --------- | -------- | -------------------------------------------------------------------- |
+| `area`    | yes      | What was (or was not) reviewed: a doc path, glob, or claim category. |
+| `state`   | yes      | One of the states below.                                             |
+| `sources` | no       | Names of the sources this area depends on.                           |
+| `detail`  | no       | One line explaining the state (especially why it is blocked).        |
 
 | Coverage state                        | Meaning                                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------ |
@@ -94,8 +110,57 @@ each reviewed file or claim category as one of:
 | `unsupported-by-configured-sources`   | No configured source is authoritative for it, and none is required for it.     |
 | `blocked-required-source-unavailable` | A required source it depends on could not be accessed; its review is incomplete. |
 
-These states are additive to `status`: a run can be `pass` while still listing
-files as `blocked-required-source-unavailable` or `unsupported-by-configured-sources`.
-Such files must NOT be reported as passing review. See
-[tests/agentic/reference-review.md](tests/agentic/reference-review.md) for how the
-shipped agentic test applies this vocabulary.
+The orchestrator adds a `test` field to each coverage entry, as it does for
+findings.
+
+## Source evidence
+
+Coverage says what a test *claims* it reviewed. `source_evidence` records what was
+actually on disk, so those claims can be audited rather than trusted:
+
+```json
+"source_evidence": [
+  {
+    "name": "landscape-client",
+    "path": "sources/landscape-client",
+    "available": true,
+    "commit": "682158e801b5b8aaffbd5ff80f63bd52a72fb430",
+    "files_seen": 393
+  }
+]
+```
+
+The shipped [source_manifest.py](tests/deterministic/source_manifest.py) check
+produces this before any agent runs, and the orchestrator merges it into the
+combined results. `commit` is the useful field: it is the only hard proof that a
+private source was really accessed, and at which revision.
+
+An agentic test must not report an area as reviewed against a source whose
+evidence says `"available": false`.
+
+## Status and the Check Run conclusion
+
+`summary.status` has three values, and they must not collapse into each other:
+
+| `status`     | Meaning                                                          | Check Run `conclusion` |
+| ------------ | ---------------------------------------------------------------- | ---------------------- |
+| `pass`       | Everything in scope was verified; nothing actionable found.      | `success`              |
+| `fail`       | An actionable discrepancy was found (a finding with `severity: error`). | `failure`         |
+| `incomplete` | No discrepancy proven, but required review coverage is missing.  | `neutral`              |
+
+Precedence: `fail` beats `incomplete`, which beats `pass`. A run is `incomplete`
+when any coverage entry is `blocked-required-source-unavailable` or
+`unsupported-by-configured-sources`.
+
+`neutral` is a real GitHub Check Run conclusion (the API accepts `success`,
+`failure`, `neutral`, `cancelled`, `skipped`, `timed_out`, `action_required`),
+and it renders distinctly from success in the Checks UI. It does **not** block a
+required status check. If your team wants incomplete coverage to gate merges,
+set `reporting.on_incomplete_coverage: action_required` in your config — that is
+the conclusion GitHub does treat as blocking. Do not use `success` for it.
+
+A file listed as `blocked-required-source-unavailable` or
+`unsupported-by-configured-sources` must never be described as passing review.
+See [tests/agentic/reference-review.md](tests/agentic/reference-review.md) for how
+the shipped agentic test applies this vocabulary.
+

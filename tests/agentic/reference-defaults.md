@@ -18,10 +18,11 @@ reference docs, and its `sources` at what they describe.
   the `tests` list tells you:
   - `targets` / `exclude` — which files are in scope.
   - `generated` — auto-generated material and how to treat it.
-  - `sources` — which sources of truth (by name) to compare against.
-  - `source_map` (optional) — an explicit ownership map associating in-scope
-    files / claim categories with the source(s) most likely to be AUTHORITATIVE
-    for them. When present, prefer it when deciding which source owns a claim.
+  - `sources` — which sources of truth (by name) this test may use.
+  - `source_map` (optional) — test-specific ownership overrides. Ownership is
+    normally stated once in the top-level `source_map`, which maps documentation
+    paths to the source(s) that OWN them; a test-level entry wins for the paths
+    it matches.
 - The `sources:` list marks each source `required` (default) or optional
   (`required: false`).
 - Any deterministic findings are in `results/all.json`.
@@ -29,9 +30,9 @@ reference docs, and its `sources` at what they describe.
 ## Establish source ownership first
 
 For each documented value or constraint, decide which configured source *produces*
-it (use `source_map` when present, otherwise infer). Prefer the producer's schema
-or validator over any consumer or example. A value absent from one source may
-belong to a different component.
+it (use the shared `source_map`, and infer only for paths it does not cover).
+Prefer the producer's schema or validator over any consumer or example. A value
+absent from one source may belong to a different component.
 
 ## What to do
 
@@ -103,9 +104,11 @@ Classify each in-scope file (or claim category) into exactly one coverage state 
 Then report:
 
 - `failure` if you found at least one mismatch and `reporting.fail_on_findings` is
-  true; otherwise `neutral`.
+  true.
+- Otherwise `reporting.on_incomplete_coverage` (default `neutral`) if any area is
+  blocked or unsupported — never `success` for a value you could not check.
 - `success` only if every in-scope file is reviewed-and-supported or
-  skipped-by-policy. Never report `success` for a blocked or unsupported area.
+  skipped-by-policy.
 - For each finding include: the option/key/parameter, the **documented** value or
   constraint, the **source** value or constraint, and the source location
   (`sources/<name>/<path>`, symbol). Keep it to a compact "documented vs source" pair.

@@ -31,6 +31,12 @@ Findings follow RESULTS-SCHEMA.md; each carries a stable `covered_topic`
 (`surface:<identifier>`) so the agentic `reference-completeness` test can skip
 anything this check already reported.
 
+A manifest that does not exist is NOT an error and NOT a pass: the manifest is
+generated from the owning source, so its absence means that source could not be
+read. The check then reports the surface as
+`blocked-required-source-unavailable` coverage and emits no findings, which keeps
+an unverifiable surface out of a clean-pass result.
+
 Usage:
     python undocumented_surface.py \\
         --manifest openapi.json \\
@@ -217,23 +223,40 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     findings: list[dict] = []
+    coverage: list[dict] = []
     identifiers_checked = 0
     for manifest_arg in args.manifest:
         manifest_path = Path(manifest_arg)
         if not manifest_path.exists():
-            sys.stderr.write(f"error: manifest not found: {manifest_path}\n")
-            return 2
+            sys.stderr.write(
+                f"warning: manifest not found: {manifest_path}; "
+                "reporting its surface as blocked\n"
+            )
+            coverage.append(
+                {
+                    "area": f"surface manifest: {manifest_path.as_posix()}",
+                    "state": "blocked-required-source-unavailable",
+                    "sources": [args.source_name or manifest_path.name],
+                    "detail": (
+                        "Manifest absent, so the interface could not be enumerated. "
+                        "This surface was NOT verified."
+                    ),
+                }
+            )
+            continue
         rel_manifest = (
             manifest_path.resolve().relative_to(root).as_posix()
             if manifest_path.resolve().is_relative_to(root)
             else manifest_path.as_posix()
         )
         source_name = args.source_name or manifest_path.name
+        undocumented_here = 0
         for identifier in load_manifest(manifest_path):
             if _ignored(identifier, args.ignore):
                 continue
             identifiers_checked += 1
             if not is_documented(identifier, corpus):
+                undocumented_here += 1
                 findings.append(
                     {
                         "check": CHECK_ID,
@@ -249,6 +272,25 @@ def main(argv: list[str] | None = None) -> int:
                         "covered_topic": f"surface:{identifier}",
                     }
                 )
+        coverage.append(
+            {
+                "area": f"surface manifest: {rel_manifest}",
+                "state": (
+                    "reviewed-with-conflicting-evidence"
+                    if undocumented_here
+                    else "reviewed-and-supported"
+                ),
+                "sources": [source_name],
+                "detail": f"{undocumented_here} undocumented interface element(s).",
+            }
+        )
+
+    if any(f["severity"] == "error" for f in findings):
+        status = "fail"
+    elif any(c["state"] == "blocked-required-source-unavailable" for c in coverage):
+        status = "incomplete"
+    else:
+        status = "pass"
 
     results = {
         "tool": "undocumented-surface",
@@ -258,9 +300,10 @@ def main(argv: list[str] | None = None) -> int:
             "files_checked": len(docs),
             "identifiers_checked": identifiers_checked,
             "findings": len(findings),
-            "status": "fail" if any(f["severity"] == "error" for f in findings) else "pass",
+            "status": status,
         },
         "findings": findings,
+        "coverage": coverage,
     }
 
     output = Path(args.output)
@@ -269,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sys.stderr.write(
         f"checked {identifiers_checked} identifier(s) across {len(docs)} doc file(s), "
-        f"{len(findings)} undocumented -> {output}\n"
+        f"{len(findings)} undocumented -> {output} [{status}]\n"
     )
     return 0
 
