@@ -124,6 +124,11 @@ instead.
 Group findings by file. List blocked and unsupported areas **separately and
 explicitly**, so a reader can see exactly which material was not verified.
 
+Report output is sanitised before publication, and any URL that is not HTTPS is
+removed. A finding about a non-HTTPS URL therefore loses the evidence it depends
+on. Describe such a value instead of pasting it — name the scheme, host and path
+in words — so the finding survives intact.
+
 ### Private sources
 
 - Cite paths, symbols, and short paraphrases; do not copy substantial private
