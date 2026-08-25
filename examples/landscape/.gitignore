@@ -1,0 +1,6 @@
+# Fetched fixtures — not committed. Only the config, README, and fetch script
+# for this example live in git; the docs under review and the source-of-truth
+# checkouts are pulled locally on demand.
+docs/
+sources/
+results/
