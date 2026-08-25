@@ -74,6 +74,11 @@ surface. A missing element in one source may simply belong to a different compon
      `internal`/`private`/`debug`/`experimental`/`dev`/`test` name; gated behind a
      debug/experimental/feature flag; only referenced from tests; marked deprecated
      or hidden; not reachable through any user-facing entry point.
+   - Not every symbol beside a setting is a setting. Class-level constants that
+     describe the schema rather than form part of it — a `ClassVar`, a section
+     name, a model config block — are machinery. Flagging them was the single
+     largest source of false positives when this test was validated, so confirm a
+     candidate is something a user can actually set before reporting it.
    When the signals conflict or you cannot tell, do not flag.
 
 ### Prefer a deterministic check for machine-enumerable surface
