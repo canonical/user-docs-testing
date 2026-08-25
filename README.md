@@ -82,7 +82,47 @@ coverage) for a real product. Run it from
 3. Add a `docs-testing.config.yml` (see
    [docs-testing.config.example.yml](docs-testing.config.example.yml)) with each
    test's targets, sources, and reporting.
-4. Compile with `gh aw compile` and commit the generated `.lock.yml`.
+4. Compile it — see below — and commit the generated `.lock.yml`.
+
+## Compiling
+
+GitHub Actions cannot run Markdown. `gh aw compile` turns each
+`.github/workflows/*.md` into a `.lock.yml`, and **that** is what Actions
+executes. Commit the `.lock.yml` next to its `.md`; a workflow without one does
+not appear in the Actions tab at all.
+
+Install the [gh CLI](https://cli.github.com/) and the
+[gh-aw extension](https://github.com/githubnext/gh-aw):
+
+```bash
+gh extension install githubnext/gh-aw   # once
+gh aw compile                           # in your repo, after any workflow change
+git add .github/workflows/*.lock.yml && git commit -m "chore: compile workflows"
+```
+
+Recompile whenever you change the workflow `.md`, your `imports:`, or want to
+pick up newer shipped tests. If a lock file drifts out of sync with its source,
+the workflow detects it at run time and reports a stale lock file, so you are
+told rather than silently running old instructions.
+
+### Staying current
+
+`imports:` are pinned at compile time, which is what lets a run work without
+network access to this repo. What gets pinned depends on the ref you name:
+
+| `imports:` ref | On recompile |
+| -------------- | ------------------------------------------- |
+| `@main`        | picks up the current tip of `main`          |
+| `@v1` (tag)    | stays on that tag until you change it       |
+| `@<sha>`       | frozen                                       |
+
+Most consumers should track a tag or `@main` and recompile periodically.
+`gh aw update` does this for you: it fetches the latest version of each
+workflow, merges it with your local edits, and recompiles.
+
+Upstream reference: [gh-aw documentation](https://github.github.io/gh-aw/),
+[CLI commands](https://github.github.io/gh-aw/setup/cli/),
+[imports](https://github.github.io/gh-aw/reference/imports/).
 
 ## Engines and tokens
 

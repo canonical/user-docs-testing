@@ -1,16 +1,28 @@
 ---
+# TEMPORARY — DEVELOPMENT SCAFFOLDING. REMOVE BEFORE THIS TOOL IS OFFERED TO
+# OTHER TEAMS.
+#
+# This workflow exists so the reference tests can be exercised against a real,
+# multi-repository product while they are being built. It is Landscape-specific
+# and therefore does NOT belong in a product-agnostic tool: consuming repos are
+# meant to install workflows/docs-testing.md and drive it from their own config,
+# which is the model examples/landscape/ documents.
+#
+# Removing it later means deleting this file and its .lock.yml. Nothing else
+# depends on it. The permanent home for a Landscape reference review is the
+# Landscape documentation repository itself, where the findings are actionable.
+#
+# It is also the only reason this repository needs SOURCE_REPO_TOKEN. Delete it
+# and the tool repo needs no private-source secret at all.
+#
 # Run the shipped reference-review test against the REAL Landscape reference
 # documentation, using examples/landscape/docs-testing.config.yml.
 #
-# This is the proving-ground run. It uses Landscape as the test project, exactly
-# as intended — the tool itself stays product-agnostic.
-#
 # SECRET REQUIRED for full coverage: SOURCE_REPO_TOKEN, a canonical-owned
 # fine-grained PAT with Contents: Read on canonical/landscape-server,
-# SSO-authorized for the canonical org. This is the same secret name already used
-# by YanisaHS/user-docs-testing-example-project. Without it the server checkout
-# fails and every server-owned page is reported as blocked — a valid and useful
-# first run, but not a complete review.
+# SSO-authorized for the canonical org. Without it the server checkout fails and
+# every server-owned page is reported as blocked — a valid and useful first run,
+# but not a complete review.
 #
 # SECURITY: workflow_dispatch only. Do NOT add a fork-PR trigger while a private
 # source token is configured.
