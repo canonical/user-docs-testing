@@ -1,8 +1,8 @@
 ---
 description: >
   Repository-agnostic tutorial validator. Discovers the tutorial file,
-  analyses prerequisites, executes every step in a fresh Multipass VM,
-  and opens a GitHub issue if any step fails.
+  analyses prerequisites, executes every step on the runner, and opens
+  a GitHub issue if any step fails.
 on:
   workflow_dispatch:
 #  schedule:
@@ -21,17 +21,12 @@ timeout-minutes: 60
 # Optional hints — the agent falls back to runtime discovery when omitted.
 # config:
 #   tutorial-path: docs/tutorial.md
-#   vm-cpus: 4
-#   vm-memory: 8G
-#   vm-disk: 50G
-#   vm-image: "24.04"
 #   prerequisites:
 #     - juju
 #     - microk8s
 
 tools:
   bash:
-    - "multipass:*"
     - "cat"
     - "find"
     - "ls"
@@ -55,10 +50,22 @@ safe-outputs:
 # Validate the repository tutorial
 
 You are a tutorial-validation agent. Your job is to find the tutorial in this
-repository, understand what it requires, execute every step inside an isolated
-Multipass VM, and report the outcome.
+repository, understand what it requires, execute every step on the runner,
+and report the outcome.
 
 Work through the phases below **in order**.
+
+**IMPORTANT — Runner environment**: You are executing on a self-hosted runner
+that is itself an ephemeral Ubuntu VM. The following are true about your
+environment:
+
+- You have a normal user shell with `sudo` access.
+- **Multipass is NOT available** and MUST NOT be installed. Do not attempt
+  `snap install multipass`, `apt install multipass`, or any similar command.
+- You do not need nested virtualisation. Run tutorial commands directly on
+  this runner — it is already an isolated, disposable environment.
+- If a tutorial lists Multipass as a prerequisite, ignore it. Multipass is
+  infrastructure for the workflow author, not a tutorial dependency for you.
 
 ---
 
@@ -122,45 +129,35 @@ Look for prerequisite information in the tutorial:
 Merge any prerequisites listed in the `config.prerequisites` block above
 with those discovered from the tutorial. Deduplicate.
 
-### 2c. Identify resource requirements
+**Filter infrastructure tools**: Remove the following from the merged
+prerequisite list. These are workflow infrastructure, not tutorial
+dependencies, and MUST NOT be installed by you:
 
-Check whether the tutorial states minimum hardware requirements (CPU, RAM,
-disk). If the tutorial specifies values **higher** than the defaults
-(4 CPUs / 8 GB RAM / 50 GB disk), use the tutorial's values. Otherwise keep
-the defaults. Override with any explicit `config.vm-*` values.
+- `multipass`, `multipassd`, or any Multipass-related package
+- `snapd`
+- `virtualbox`, `qemu`, `libvirt`, `lxd` (hypervisors / VM managers)
 
-### 2d. Identify cleanup sections
+### 2c. Identify cleanup sections
 
 Locate any final section whose heading contains words like "Clean up",
 "Teardown", "Remove", or "Destroy". Mark those sections to be **skipped**
-during execution — the VM is torn down separately.
+during execution — the runner is ephemeral and will be torn down separately.
 
 ---
 
 ## Phase 3 — Set up the environment
 
-Create an ephemeral Multipass VM so the self-hosted runner stays clean.
-Use the resource values determined in Phase 2c and the VM image from
-`config.vm-image` (default `24.04`).
+This runner is already an ephemeral Ubuntu VM. No nested virtualisation is
+needed. Run all commands directly on the runner.
 
-```
-multipass launch <vm-image> --name tutorial-vm-${{ github.run_id }} \
-  --cpus <cpus> --memory <memory> --disk <disk>
-```
-
-Run **every** subsequent command inside the VM using:
-
-```
-multipass exec tutorial-vm-${{ github.run_id }} -- bash -lc "<command>"
-```
-
-Do **not** run tutorial commands directly on the runner host.
+**CRITICAL**: Do NOT attempt to install Multipass, snapd, or any
+virtualisation tool. These are not available and cannot be installed.
 
 ### Install prerequisites
 
-Install every prerequisite identified in Phase 2b inside the VM. If a
-prerequisite requires installation commands that were already extracted as
-tutorial steps, you may execute them here as part of setup — but still
+Install every prerequisite identified in Phase 2b directly on this runner.
+If a prerequisite requires installation commands that were already extracted
+as tutorial steps, you may execute them here as part of setup — but still
 record them as executed steps.
 
 If any prerequisite fails to install, **record it as a failure** (do not
@@ -170,8 +167,8 @@ silently skip it) and continue with the remaining prerequisites.
 
 ## Phase 4 — Execute the tutorial
 
-Run each executable command from Phase 2a **in document order** inside the
-VM.
+Run each executable command from Phase 2a **in document order** directly
+on the runner.
 
 ### Execution rules
 
@@ -179,7 +176,7 @@ VM.
   trimmed excerpt of stdout/stderr (last ~40 lines is enough).
 - On a step failure, do **not** abort — record the failure and continue with
   the remaining steps so the report captures every problem in one run.
-- Skip the cleanup sections identified in Phase 2d.
+- Skip the cleanup sections identified in Phase 2c.
 - If a command appears stuck for an unexpectedly long time, note this in
   your report. There is no per-command timeout; the overall workflow timeout
   (60 minutes) is the safety net.
@@ -206,8 +203,7 @@ Call the `create_issue` tool **once** with:
 - `body`: a Markdown report containing:
   1. **Run metadata**: date, workflow run URL
      (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`),
-     VM name, VM image, Multipass version, discovered tutorial path,
-     resolved prerequisites.
+     discovered tutorial path, resolved prerequisites.
   2. **Overall status**: `failure` with a one-line summary.
   3. **Per-step results**: one section per tutorial step containing the
      command, exit status, and trimmed evidence.
@@ -220,11 +216,5 @@ Only one safe output call is expected per run.
 
 ## Phase 6 — Teardown
 
-After you have called either `noop` or `create_issue`, delete the VM:
-
-```
-multipass delete --purge tutorial-vm-${{ github.run_id }}
-```
-
-Failure to reach the teardown step is acceptable — a follow-up cleanup step
-outside the agent handles orphaned VMs.
+No teardown is needed — this runner is ephemeral and will be destroyed by
+the CI platform after the workflow completes. You may skip this phase.
