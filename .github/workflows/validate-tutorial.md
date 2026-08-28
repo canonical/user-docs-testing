@@ -19,6 +19,9 @@ runs-on: [ubuntu-latest]
 #runs-on: [self-hosted, linux, amd64]
 timeout-minutes: 60
 
+env:
+  TUTORIAL_PATH: "docs/tutorial.md"   # change to .rst if the tutorial is reStructuredText
+
 # Disable the AWF sandbox so the agent can use sudo, snap, and apt.
 # The ubuntu-latest runner is ephemeral, so the isolation loss is acceptable.
 features:
@@ -29,9 +32,31 @@ sandbox:
 
 strict: false
 
+max-ai-credits: 50
+
+network:
+  allowed:
+    - defaults
+    - "snapcraft.io"
+    - "charmhub.io"
+
+# Pre-flight safety check: reject tutorials containing obviously destructive
+# commands before the agent ever sees them.
+jobs:
+  setup:
+    steps:
+      - name: Validate tutorial safety
+        run: |
+          echo "Checking tutorial for dangerous patterns..."
+          if grep -qE 'rm -rf /|mkfs\.|dd if=/dev/zero|> /dev/sd' "$TUTORIAL_PATH" 2>/dev/null; then
+            echo "ERROR: Tutorial contains potentially destructive commands"
+            exit 1
+          fi
+          echo "Tutorial passed safety check."
+
 # Optional hints — the agent falls back to runtime discovery when omitted.
 # config:
-#   tutorial-path: docs/tutorial.md
+#   tutorial-path: docs/tutorial.md  # or docs/tutorial.rst
 #   prerequisites:
 #     - juju
 #     - microk8s
@@ -73,20 +98,23 @@ following are true about your environment:
 
 ## Phase 1 — Discover the tutorial
 
-Locate the tutorial file to execute.
+Locate the tutorial file to execute. The tutorial may be written in Markdown
+(`.md`) or reStructuredText (`.rst`). Treat both formats equally.
 
 1. If a `tutorial-path` value is provided in the `config` block above, use
    that path directly.
-2. Otherwise, search the repository in the following order and use the **first
-   match**:
-   - `docs/tutorial.md`
-   - `TUTORIAL.md`
+2. Otherwise, use the path from the `TUTORIAL_PATH` environment variable
+   (default: `docs/tutorial.md`).
+3. If that file does not exist, search the repository in the following order
+   and use the **first match**:
+   - `docs/tutorial.md` or `docs/tutorial.rst`
+   - `TUTORIAL.md` or `TUTORIAL.rst`
    - `docs/tutorials/` (if the directory exists, pick the primary file — an
-     `index.md` or the only `.md` file present)
-   - `README.md` — only if it contains a Markdown heading whose text includes
-     the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
+     `index.md`, `index.rst`, or the only `.md`/`.rst` file present)
+   - `README.md` or `README.rst` — only if it contains a heading whose text
+     includes the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
      Extract only that section and its subsections.
-3. If no tutorial is found, call the `noop` tool with the message
+4. If no tutorial is found, call the `noop` tool with the message
    `"No tutorial found in repository — nothing to validate."` and stop.
 
 Read the discovered file in full before proceeding.
@@ -99,10 +127,13 @@ Extract the information needed to set up the environment and run the tutorial.
 
 ### 2a. Identify executable commands
 
-Scan every fenced code block in the tutorial. A block is **executable** when
-any of the following are true:
+Scan every code block in the tutorial. The tutorial may use Markdown fenced
+blocks or reStructuredText `.. code-block::` directives. A block is
+**executable** when any of the following are true:
 
 - Its language hint is `bash`, `sh`, `shell`, or `console`.
+  - Markdown: ` ```bash ` or ` ```console `
+  - reStructuredText: `.. code-block:: bash` or `.. code:: shell`
 - It has no language hint **and** its lines begin with a `$` or `#` prompt
   character (strip the prompt before execution).
 - It has no language hint and the surrounding prose clearly introduces it as
