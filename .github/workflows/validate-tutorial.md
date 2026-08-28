@@ -19,6 +19,16 @@ runs-on: [ubuntu-latest]
 #runs-on: [self-hosted, linux, amd64]
 timeout-minutes: 60
 
+# Disable the AWF sandbox so the agent can use sudo, snap, and apt.
+# The ubuntu-latest runner is ephemeral, so the isolation loss is acceptable.
+features:
+  dangerously-disable-sandbox-agent: "tutorial validation requires sudo snap and apt for installing prerequisites like juju and microk8s"
+
+sandbox:
+  agent: false
+
+strict: false
+
 # Optional hints — the agent falls back to runtime discovery when omitted.
 # config:
 #   tutorial-path: docs/tutorial.md
@@ -27,20 +37,11 @@ timeout-minutes: 60
 #     - microk8s
 
 tools:
-  bash:
-    - "cat"
-    - "find"
-    - "ls"
-    - "sed"
-    - "awk"
-    - "grep"
-    - "head"
-    - "tail"
-    - "wc"
-    - "date"
+  bash: [":*"]
   edit:
 
 safe-outputs:
+  threat-detection: false
   create-issue:
     title-prefix: "[tutorial-failure] "
     labels: [tutorial, automation, bug]
@@ -56,13 +57,13 @@ and report the outcome.
 
 Work through the phases below **in order**.
 
-**IMPORTANT — Runner environment**: You are executing on a self-hosted runner
-that is itself an ephemeral Ubuntu VM. The following are true about your
-environment:
+**IMPORTANT — Runner environment**: You are executing directly on an ephemeral
+`ubuntu-latest` GitHub Actions runner with the AWF sandbox disabled. The
+following are true about your environment:
 
-- You have a normal user shell with `sudo` access.
-- **Multipass is NOT available** and MUST NOT be installed. Do not attempt
-  `snap install multipass`, `apt install multipass`, or any similar command.
+- You have a normal user shell with full `sudo` access.
+- `snap` and `apt` are available and fully functional. Use them to install
+  any prerequisites the tutorial requires.
 - You do not need nested virtualisation. Run tutorial commands directly on
   this runner — it is already an isolated, disposable environment.
 - If a tutorial lists Multipass as a prerequisite, ignore it. Multipass is
@@ -135,7 +136,6 @@ prerequisite list. These are workflow infrastructure, not tutorial
 dependencies, and MUST NOT be installed by you:
 
 - `multipass`, `multipassd`, or any Multipass-related package
-- `snapd`
 - `virtualbox`, `qemu`, `libvirt`, `lxd` (hypervisors / VM managers)
 
 ### 2c. Identify cleanup sections
@@ -148,11 +148,12 @@ during execution — the runner is ephemeral and will be torn down separately.
 
 ## Phase 3 — Set up the environment
 
-This runner is already an ephemeral Ubuntu VM. No nested virtualisation is
-needed. Run all commands directly on the runner.
+This runner is an ephemeral `ubuntu-latest` GitHub Actions runner with the
+AWF sandbox disabled. No nested virtualisation is needed. Run all commands
+directly on the runner.
 
-**CRITICAL**: Do NOT attempt to install Multipass, snapd, or any
-virtualisation tool. These are not available and cannot be installed.
+You have full `sudo`, `snap`, and `apt` access. Use them to install
+prerequisites.
 
 ### Install prerequisites
 
