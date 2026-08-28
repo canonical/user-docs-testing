@@ -101,21 +101,32 @@ following are true about your environment:
 Locate the tutorial file to execute. The tutorial may be written in Markdown
 (`.md`) or reStructuredText (`.rst`). Treat both formats equally.
 
-1. If a `tutorial-path` value is provided in the `config` block above, use
-   that path directly.
-2. Otherwise, use the path from the `TUTORIAL_PATH` environment variable
-   (default: `docs/tutorial.md`).
-3. If that file does not exist, search the repository in the following order
-   and use the **first match**:
-   - `docs/tutorial.md` or `docs/tutorial.rst`
-   - `TUTORIAL.md` or `TUTORIAL.rst`
-   - `docs/tutorials/` (if the directory exists, pick the primary file — an
-     `index.md`, `index.rst`, or the only `.md`/`.rst` file present)
-   - `README.md` or `README.rst` — only if it contains a heading whose text
-     includes the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
-     Extract only that section and its subsections.
-4. If no tutorial is found, call the `noop` tool with the message
-   `"No tutorial found in repository — nothing to validate."` and stop.
+**Step 1 — Read the environment variable**: Run `echo "$TUTORIAL_PATH"` to
+get the configured tutorial path. This is the **primary** source of truth.
+If the output is a non-empty file path, use it directly. Do not fall back
+to auto-discovery unless the file genuinely does not exist at that path.
+
+**Step 2 — Check the config override**: If a `tutorial-path` value is
+provided in the `config` block above, it takes precedence over
+`TUTORIAL_PATH`. Use that path instead.
+
+**Step 3 — Verify the file exists**: Run `ls -la` on the resolved path to
+confirm the file is present. If it exists, proceed to read it.
+
+**Step 4 — Auto-discovery (last resort)**: Only if the resolved path does
+not exist, search the repository in the following order and use the
+**first match**:
+- `docs/tutorial.md` or `docs/tutorial.rst`
+- `TUTORIAL.md` or `TUTORIAL.rst`
+- `docs/tutorials/` (if the directory exists, pick the primary file — an
+  `index.md`, `index.rst`, or the only `.md`/`.rst` file present)
+- `README.md` or `README.rst` — only if it contains a heading whose text
+  includes the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
+  Extract only that section and its subsections.
+
+**Step 5 — Give up if nothing found**: If no tutorial is found after all
+of the above, call the `noop` tool with the message
+`"No tutorial found in repository — nothing to validate."` and stop.
 
 Read the discovered file in full before proceeding.
 
