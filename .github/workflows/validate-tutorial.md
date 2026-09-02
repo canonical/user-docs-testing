@@ -37,6 +37,7 @@ max-ai-credits: 50
 network:
   allowed:
     - defaults
+    - api.charmhub.io
     - "snapcraft.io"
     - "charmhub.io"
 
