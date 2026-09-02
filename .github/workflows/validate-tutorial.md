@@ -20,7 +20,7 @@ runs-on: [ubuntu-latest]
 timeout-minutes: 60
 
 env:
-  TUTORIAL_PATH: "docs/tutorial/basic-deployment.rst"   # change to .rst if the tutorial is reStructuredText
+  TUTORIAL_PATH: "docs/tutorial/tutorial.md" 
 
 # Disable the AWF sandbox so the agent can use sudo, snap, and apt.
 # The ubuntu-latest runner is ephemeral, so the isolation loss is acceptable.
