@@ -243,6 +243,7 @@ EOF
 
 # Verify resolution again
 nslookup api.charmhub.io 8.8.8.8
+```
 
 ### Install prerequisites
 
