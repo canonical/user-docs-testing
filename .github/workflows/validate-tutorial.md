@@ -227,6 +227,23 @@ directly on the runner.
 You have full `sudo`, `snap`, and `apt` access. Use them to install
 prerequisites.
 
+### Configure DNS
+
+Before proceeding with prerequisites, ensure DNS resolution is working for external services:
+
+```bash
+# Verify DNS resolution for Charmhub
+nslookup api.charmhub.io 8.8.8.8 || echo "DNS resolution failed for api.charmhub.io"
+
+# If DNS fails, update /etc/resolv.conf to use Google's public DNS
+sudo tee /etc/resolv.conf > /dev/null <<EOF
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+EOF
+
+# Verify resolution again
+nslookup api.charmhub.io 8.8.8.8
+
 ### Install prerequisites
 
 Install every prerequisite identified in Phase 2b directly on this runner.
