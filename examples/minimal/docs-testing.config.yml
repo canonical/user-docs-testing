@@ -1,0 +1,21 @@
+version: 1
+
+# The documentation being tested.
+docs: "docs/reference/**/*.md"
+
+# The product it describes. In a real repository this is checked out by the
+# workflow into sources/<name>; here it is committed so the example runs offline.
+sources:
+  - name: product
+    repo: my-org/my-product
+
+tests:
+  # A deterministic check: every identifier in the manifest must appear in the
+  # documentation. Runs locally, no AI involved.
+  - name: cli-surface
+    uses: undocumented-surface
+    with:
+      manifest: sources/product/cli-surface.txt
+
+  # A review by an AI engine. Runs in CI, via the installed workflow.
+  - reference-review

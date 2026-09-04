@@ -1,0 +1,95 @@
+name: "Docs Testing"
+description: >-
+  Validate docs-testing.config.yml, record which sources of truth were really
+  checked out, and run the deterministic documentation checks.
+
+inputs:
+  config:
+    description: "Path to the documentation testing configuration."
+    required: false
+    default: "docs-testing.config.yml"
+  sources-root:
+    description: "Directory the sources of truth are checked out into."
+    required: false
+    default: "sources"
+  output:
+    description: "Where to write the combined results."
+    required: false
+    default: "results/all.json"
+  python-version:
+    description: "Python used to run the checks."
+    required: false
+    default: "3.12"
+  fail-on-tool-error:
+    description: >-
+      Fail this step when a check crashes or emits unreadable results. The
+      default is false so the agent still runs and reports the failure in the
+      Check Run, which is more useful than a bare red step. The run can never
+      be reported as passing either way.
+    required: false
+    default: "false"
+
+outputs:
+  status:
+    description: "pass, warn, incomplete, fail, or error."
+    value: ${{ steps.run.outputs.status }}
+  results:
+    description: "Path to the combined results file."
+    value: ${{ steps.run.outputs.results }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install documentation testing
+      shell: bash
+      run: python -m pip install --quiet --disable-pip-version-check pyyaml
+
+    # Configuration is checked before anything runs. A typo should cost a
+    # fifteen-second step, not a full agent run that reports something confusing.
+    - name: Validate configuration
+      shell: bash
+      env:
+        DOCS_TESTING_HOME: ${{ github.action_path }}/../..
+        CONFIG: ${{ inputs.config }}
+      run: |
+        set -euo pipefail
+        PYTHONPATH="$DOCS_TESTING_HOME" python -m docs_testing validate \
+          --config "$CONFIG" \
+          --workflow "${GH_AW_WORKFLOW_FILE:-.github/workflows/docs-testing.md}"
+
+    - name: Run documentation checks
+      id: run
+      shell: bash
+      env:
+        DOCS_TESTING_HOME: ${{ github.action_path }}/../..
+        CONFIG: ${{ inputs.config }}
+        SOURCES_ROOT: ${{ inputs.sources-root }}
+        OUTPUT: ${{ inputs.output }}
+        FAIL_ON_TOOL_ERROR: ${{ inputs.fail-on-tool-error }}
+      run: |
+        set -uo pipefail
+        PYTHONPATH="$DOCS_TESTING_HOME" python -m docs_testing run \
+          --config "$CONFIG" \
+          --sources-root "$SOURCES_ROOT" \
+          --output "$OUTPUT"
+        code=$?
+
+        status=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['summary']['status'])" "$OUTPUT" 2>/dev/null || echo error)
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        echo "results=$OUTPUT" >> "$GITHUB_OUTPUT"
+
+        # Exit 1 (documentation findings) and 3 (incomplete) are outcomes to be
+        # reported, not step failures: the agent still has to publish them.
+        if [ "$code" = "2" ] && [ "$FAIL_ON_TOOL_ERROR" = "true" ]; then
+          echo "::error title=Docs testing::A documentation check failed to run; results are not trustworthy."
+          exit 1
+        fi
+        if [ "$code" = "2" ]; then
+          echo "::warning title=Docs testing::A documentation check failed to run; the report will be marked as a tool error."
+        fi
+        exit 0
