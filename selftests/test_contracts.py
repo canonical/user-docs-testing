@@ -21,6 +21,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+#: The shipped example deterministic check. Tests drive it the way a project
+#: would: as its own command, not as anything this tool provides.
+SURFACE_SCRIPT = REPO_ROOT / "tests" / "deterministic" / "undocumented_surface.py"
+
 from docs_testing.checks.source_evidence import inspect_source  # noqa: E402
 from docs_testing.config import ConfigError, load  # noqa: E402
 from docs_testing.results import (  # noqa: E402
@@ -60,7 +64,14 @@ class Project:
         return path
 
     def config(self, yaml_text: str) -> Path:
-        return self.file("docs-testing.config.yml", textwrap.dedent(yaml_text))
+        # @PY@/@SURFACE@ let a test invoke the shipped example script, which is how
+        # a real project runs a deterministic check: its own command.
+        text = (
+            textwrap.dedent(yaml_text)
+            .replace("@PY@", sys.executable)
+            .replace("@SURFACE@", str(SURFACE_SCRIPT))
+        )
+        return self.file("docs-testing.config.yml", text)
 
     def run(self):
         config = load(self.root / "docs-testing.config.yml")
@@ -100,9 +111,8 @@ class SuccessfulVerification(ContractTest):
                 repo: a/b
             tests:
               - name: surface
-                uses: undocumented-surface
-                with:
-                  manifest: sources/product/surface.txt
+                run: "@PY@ @SURFACE@ --manifest sources/product/surface.txt --targets docs/reference/**/*.md --output results/surface.json"
+                results: "results/surface.json"
             """
         )
         payload, _ = self.project.run()
@@ -124,10 +134,8 @@ class ActionableProblem(ContractTest):
                 repo: a/b
             tests:
               - name: surface
-                uses: undocumented-surface
-                with:
-                  manifest: sources/product/surface.txt
-                  severity: error
+                run: "@PY@ @SURFACE@ --manifest sources/product/surface.txt --targets docs/reference/**/*.md --severity error --output results/surface.json"
+                results: "results/surface.json"
             """
         )
         payload, results = self.project.run()
@@ -149,10 +157,8 @@ class ActionableProblem(ContractTest):
               fail_on_findings: false
             tests:
               - name: surface
-                uses: undocumented-surface
-                with:
-                  manifest: sources/product/surface.txt
-                  severity: error
+                run: "@PY@ @SURFACE@ --manifest sources/product/surface.txt --targets docs/reference/**/*.md --severity error --output results/surface.json"
+                results: "results/surface.json"
             """
         )
         payload, _ = self.project.run()
@@ -172,9 +178,8 @@ class NonBlockingFinding(ContractTest):
                 repo: a/b
             tests:
               - name: surface
-                uses: undocumented-surface
-                with:
-                  manifest: sources/product/surface.txt
+                run: "@PY@ @SURFACE@ --manifest sources/product/surface.txt --targets docs/reference/**/*.md --output results/surface.json"
+                results: "results/surface.json"
             """
         )
         payload, _ = self.project.run()
@@ -193,9 +198,8 @@ class IncompleteVerification(ContractTest):
             required: {required}
         tests:
           - name: surface
-            uses: undocumented-surface
-            with:
-              manifest: sources/product/surface.txt
+            run: "@PY@ @SURFACE@ --manifest sources/product/surface.txt --targets docs/reference/**/*.md --output results/surface.json"
+            results: "results/surface.json"
         """
 
     def test_missing_required_source_is_incomplete_not_a_pass(self):
@@ -252,9 +256,8 @@ class IncompleteVerification(ContractTest):
                 repo: a/b
             tests:
               - name: surface
-                uses: undocumented-surface
-                with:
-                  manifest: sources/product/never-generated.json
+                run: "@PY@ @SURFACE@ --manifest sources/product/never-generated.json --targets docs/reference/**/*.md --output results/surface.json"
+                results: "results/surface.json"
             """
         )
         payload, _ = self.project.run()
@@ -431,7 +434,28 @@ class CommandSafety(ContractTest):
 
 
 class SkippedMaterial(ContractTest):
-    def test_excluded_documentation_is_not_searched(self):
+    def test_exclude_narrows_the_scope_handed_to_a_review(self):
+        self.project.doc("cli.md", "Options: --verbose.")
+        self.project.source("product")
+        self.project.config(
+            """
+            version: 1
+            targets: "docs/reference/**/*.md"
+            exclude: "docs/reference/generated/**"
+            sources:
+              - name: product
+                repo: a/b
+            tests:
+              - reference-review
+            """
+        )
+        payload, _ = self.project.run()
+        review = payload["plan"]["agentic_tests"][0]
+        self.assertEqual(review["exclude"], ["docs/reference/generated/**"])
+
+    def test_a_command_controls_its_own_scope(self):
+        # `exclude` narrows what the reviews look at. A deterministic command is
+        # your own program, so it scopes itself through its own arguments.
         self.project.doc("cli.md", "Options: --verbose.")
         (self.project.root / "docs" / "reference" / "generated").mkdir()
         (self.project.root / "docs" / "reference" / "generated" / "api.md").write_text(
@@ -448,13 +472,13 @@ class SkippedMaterial(ContractTest):
                 repo: a/b
             tests:
               - name: surface
-                uses: undocumented-surface
-                with:
-                  manifest: sources/product/surface.txt
+                run: "@PY@ @SURFACE@ --manifest sources/product/surface.txt --targets docs/reference/*.md --output results/surface.json"
+                results: "results/surface.json"
             """
         )
         payload, _ = self.project.run()
-        # --retries is documented only in the excluded file, so it is still missing.
+        # The command searched only the top level, so the generated file that
+        # mentions --retries was never read and the gap is still reported.
         self.assertEqual(len(payload["findings"]), 1)
         self.assertIn("--retries", payload["findings"][0]["message"])
 
@@ -472,9 +496,8 @@ class Deduplication(ContractTest):
                 repo: a/b
             tests:
               - name: surface
-                uses: undocumented-surface
-                with:
-                  manifest: sources/product/surface.txt
+                run: "@PY@ @SURFACE@ --manifest sources/product/surface.txt --targets docs/reference/**/*.md --output results/surface.json"
+                results: "results/surface.json"
               - reference-completeness
             """
         )
@@ -628,12 +651,13 @@ class ConfigurationErrors(unittest.TestCase):
         error = self._load('version: 1\ntargets: "d/**"\ntests:\n  - name: empty\n')
         self.assertIn("does nothing", error.problem)
 
-    def test_missing_required_built_in_option_is_caught(self):
+    def test_a_deterministic_check_is_not_a_shipped_review(self):
         error = self._load(
             'version: 1\ntargets: "d/**"\n'
             "tests:\n  - name: s\n    uses: undocumented-surface\n"
         )
-        self.assertIn("manifest", error.problem)
+        self.assertIn("unknown review", error.problem)
+        self.assertIn("run:", error.hint)
 
     def test_no_tests_is_rejected_rather_than_verifying_nothing(self):
         error = self._load('version: 1\ntargets: "d/**"\n')
@@ -686,11 +710,12 @@ class CommandLine(unittest.TestCase):
             self.assertEqual(payload["summary"]["status"], ERROR)
             self.assertTrue(payload["errors"])
 
-    def test_list_shows_the_built_in_checks(self):
+    def test_list_shows_the_shipped_reviews(self):
         result = self._run(["list"], REPO_ROOT)
         self.assertEqual(result.returncode, EXIT_OK)
-        for expected in ("reference-review", "reference-completeness", "undocumented-surface"):
+        for expected in ("reference-review", "reference-completeness"):
             self.assertIn(expected, result.stdout)
+        self.assertIn("run:", result.stdout)
 
 
 class ExitCodeMapping(unittest.TestCase):

@@ -29,10 +29,10 @@ The documentation covers `--verbose` and `--output`, but the product also has
 WARNINGS  documentation verified, non-blocking findings reported
 
 Warnings (1) — reported, not blocking:
-  sources/product/cli-surface.txt  Interface element is not documented: --retries  [cli-surface]
+  sources/product/cli-surface.txt  Interface element not documented in reference targets: --retries  [cli-surface]
 
 Sources:
-  ok      product                      commit=... files=1
+  ok      product                      commit=- files=1
 
 1/1 check(s) ran, 0 problem(s), 1 warning(s), 0 unverified area(s), 0 tool error(s)
 1 review(s) are run by the AI engine in CI and are not included above.
@@ -43,14 +43,16 @@ a broken claim, so by default it does not fail CI.
 
 ## Make it a failure instead
 
-Add a severity to the check:
+Pass `--severity error` to the check's command:
 
 ```yaml
   - name: cli-surface
-    uses: undocumented-surface
-    with:
-      manifest: sources/product/cli-surface.txt
-      severity: error
+    run: "python3 ../../tests/deterministic/undocumented_surface.py
+           --manifest sources/product/cli-surface.txt
+           --targets docs/reference/**/*.md
+           --severity error
+           --output results/cli-surface.json"
+    results: "results/cli-surface.json"
 ```
 
 Now the same run reports `FAIL` and exits `1`.

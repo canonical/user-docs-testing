@@ -13,14 +13,14 @@ already run tests.
 
 ## What it checks
 
-| Check | Question it answers |
-| ----- | ------------------- |
+| Review | Question it answers |
+| ------ | ------------------- |
 | `reference-review` | Does the documentation state something the product contradicts? |
 | `reference-completeness` | Does product surface exist that the documentation never mentions? |
-| `undocumented-surface` | The same question, done precisely, wherever the interface is machine-readable (`--help`, OpenAPI, JSON Schema). |
 
-The first two are reviews performed by an AI engine. The third is a deterministic
-diff that also runs locally. You can add your own checks in any language.
+These two reviews are what the tool ships, performed by an AI engine. Alongside
+them you can run **deterministic checks** — any command of your own, in any
+language — and their findings appear in the same report.
 
 Every finding must cite the product source that proves it. A review that cannot
 reach its source reports the affected documentation as **unverified** — never as

@@ -103,15 +103,19 @@ reporting:
 tests:
   - reference-review
 
-  # The deterministic counterpart to reference-completeness, for the parts of the
-  # server interface that are machine-enumerable. The manifest has to be
-  # generated from the private server source, so add a workflow step that writes
-  # it before this check runs.
+  # A deterministic counterpart to reference-completeness, for the parts of the
+  # server interface that are machine-enumerable. Deterministic checks are always
+  # your own command; the script below is the worked example from
+  # tests/deterministic/ in the user-docs-testing repository, copied into this
+  # project. The manifest has to be generated from the private server source, so
+  # add a workflow step that writes it before this check runs.
   #
   # - name: server-api-surface
-  #   uses: undocumented-surface
-  #   with:
-  #     manifest: sources/landscape-server/openapi.json
+  #   run: "python3 scripts/undocumented_surface.py
+  #          --manifest sources/landscape-server/openapi.json
+  #          --targets docs/reference/api/**/*.md
+  #          --output results/api-surface.json"
+  #   results: "results/api-surface.json"
 
 # ---------------------------------------------------------------------------
 # WHAT THIS EXAMPLE DEMONSTRATES

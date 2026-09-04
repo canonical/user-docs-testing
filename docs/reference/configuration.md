@@ -99,7 +99,7 @@ should not need to.
 Each entry is either a built-in, or your own command. `docs-testing list` prints
 what is available.
 
-### Built-in reviews
+### Shipped reviews
 
 Performed by an AI engine in CI.
 
@@ -111,41 +111,18 @@ tests:
     targets: "docs/reference/cli/**/*.md"
 ```
 
-| Built-in | Question it answers |
-| -------- | ------------------- |
+| Review | Question it answers |
+| ------ | ------------------- |
 | `reference-review` | Does the documentation state something the owning product contradicts? |
 | `reference-completeness` | Does user-facing product surface exist that the documentation never mentions? |
 
-### Built-in deterministic checks
+These are the only checks this tool ships. Every deterministic check is a
+command of your own.
 
-Run by `docs-testing run`, locally or in CI. No AI involved.
+### Deterministic checks
 
-```yaml
-tests:
-  - name: api-surface
-    uses: undocumented-surface
-    with:
-      manifest: sources/product/openapi.json
-      severity: warning
-```
-
-`undocumented-surface` diffs a machine-readable interface description against the
-documentation and flags identifiers that never appear. It accepts OpenAPI or
-Swagger JSON, a JSON Schema, a JSON array of strings, or a plain list with one
-identifier per line — so `widget --help > surface.txt` is a valid manifest.
-
-| `with` key | Required | Default | Description |
-| ---------- | -------- | ------- | ----------- |
-| `manifest` | yes | — | Path to the manifest, or a list of paths. |
-| `ignore` | no | none | Identifiers to skip. A trailing `*` matches a prefix. |
-| `severity` | no | `warning` | `warning` or `error`. |
-| `source_name` | no | manifest filename | Name recorded on each finding. |
-
-A missing manifest is *not* a pass and *not* an error: the manifest comes from
-the product, so its absence means the surface could not be enumerated. It is
-reported as unverified.
-
-### Your own checks
+A deterministic check is any command, in any language. Nothing about it is
+AI-driven, and it runs locally as readily as in CI.
 
 ```yaml
 tests:
@@ -165,17 +142,34 @@ Commands run **without a shell**, so configuration cannot inject one. A command
 containing `|`, `&&`, `;`, `>` or similar is rejected with an explanation; put
 the pipeline in a script and call the script.
 
+`targets` and `exclude` scope the **reviews**. A command is your own program, so
+it scopes itself through its own arguments.
+
+#### Worked examples
+
+The [`tests/deterministic/`](https://github.com/canonical/user-docs-testing/tree/main/tests/deterministic)
+directory of the user-docs-testing repository holds two scripts that show how to
+write a check of this shape:
+
+| Script | What it demonstrates |
+| ------ | -------------------- |
+| `undocumented_surface.py` | Diffing a machine-readable interface manifest — OpenAPI, JSON Schema, or a captured `--help` — against the documentation, and emitting findings with a `covered_topic` so a review skips them. |
+| `source_manifest.py` | Emitting `coverage` and `source_evidence`, so unverifiable material is reported as blocked rather than passing. |
+
+They are **demonstrations, not checks you are expected to run**. Read them, copy
+what is useful, and write the checks your project actually needs.
+
 ### Fields common to every test
 
 | Field | Default | Description |
 | ----- | ------- | ----------- |
 | `name` | — | Required. Labels the test's findings. |
-| `uses` | — | A built-in. Mutually exclusive with `run`. |
+| `uses` | — | A shipped review. Mutually exclusive with `run`. |
 | `run` | — | Your own command. Mutually exclusive with `uses`. |
 | `results` | none | Where `run` writes its findings. |
 | `setup` | none | Commands to prepare this test. |
-| `targets` | top-level `targets` | Narrow this test's scope. |
-| `exclude` | top-level `exclude` | Narrow this test's scope. |
+| `targets` | top-level `targets` | Narrow a review's scope. |
+| `exclude` | top-level `exclude` | Narrow a review's scope. |
 | `sources` | all sources | Which sources this test may use. |
 | `source_map` | top-level | Test-specific ownership. |
 | `generated` | none | `paths` plus `mode`: `skip`, `annotate`, or `deterministic-only`. |

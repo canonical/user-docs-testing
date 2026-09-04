@@ -73,9 +73,8 @@ sources:
     repo: my-org/my-product
 tests:
   - name: cli-surface
-    uses: undocumented-surface
-    with:
-      manifest: sources/product/cli-surface.txt
+    run: "python3 scripts/check_cli_surface.py --output results/cli-surface.json"
+    results: "results/cli-surface.json"
 ```
 
 ```yaml

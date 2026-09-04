@@ -86,27 +86,23 @@ def cmd_init(args) -> int:
 
 
 def cmd_list(args) -> int:
-    agentic = [b for b in BUILTINS.values() if b.kind == AGENTIC]
-    deterministic = [b for b in BUILTINS.values() if b.kind != AGENTIC]
-
-    sys.stdout.write("\nReviews (run by an AI engine in CI):\n")
-    for builtin in agentic:
+    sys.stdout.write("\nReviews this tool ships (performed by an AI engine in CI):\n")
+    for builtin in BUILTINS.values():
         sys.stdout.write(f"  {builtin.id:<24} {builtin.summary}\n")
-
-    sys.stdout.write("\nDeterministic checks (also runnable locally):\n")
-    for builtin in deterministic:
-        sys.stdout.write(f"  {builtin.id:<24} {builtin.summary}\n")
-        if builtin.required_with:
-            sys.stdout.write(f"  {'':<24} requires: with.{', with.'.join(builtin.required_with)}\n")
 
     sys.stdout.write(
         "\nUse one in docs-testing.config.yml:\n"
         "  tests:\n"
         "    - reference-review\n"
-        "\nOr run your own command:\n"
+        "\nDeterministic checks are your own command \u2014 any language, as long as it\n"
+        "writes the schema in docs/reference/results.md, or just exits non-zero:\n"
         "  tests:\n"
         "    - name: my-check\n"
-        "      run: \"python3 scripts/my_check.py\"\n\n"
+        "      run: \"python3 scripts/my_check.py --output results/my.json\"\n"
+        "      results: \"results/my.json\"\n"
+        "\nThe scripts under tests/deterministic/ in the user-docs-testing repository\n"
+        "are worked examples of writing one. They are demonstrations, not checks you\n"
+        "are expected to run.\n\n"
     )
     return EXIT_OK
 

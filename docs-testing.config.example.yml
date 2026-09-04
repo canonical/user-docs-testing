@@ -196,28 +196,23 @@ tests:
     # Do not repeat anything a deterministic check already reported. Default true.
     skip_deterministically_covered: true
 
-  # --- A built-in deterministic check --------------------------------------
-  # Diffs a machine-readable interface description against the documentation.
-  # The manifest comes from the owning source: an OpenAPI export, a JSON Schema,
-  # a captured `--help`, or a plain list with one identifier per line. Generate
-  # it in a workflow step before this runs.
+  # --- A deterministic check ------------------------------------------------
+  # Always a command of your own — this tool ships no deterministic checks. Any
+  # language works, as long as it writes the schema in docs/reference/results.md.
   #
-  # A missing manifest is neither a pass nor an error: the surface simply could
-  # not be enumerated, so it is reported as unverified.
+  # The scripts under tests/deterministic/ in the user-docs-testing repository
+  # are worked EXAMPLES of writing one, not checks you are expected to run. The
+  # command below borrows one to show the shape; a real project points at its
+  # own checker.
+  #
+  # Commands run WITHOUT a shell, so configuration cannot inject one. If you
+  # need a pipeline, put it in a script and call the script.
   - name: server-api-surface
-    uses: undocumented-surface
-    targets:
-      - "docs/reference/api/**/*.md"
-    with:
-      manifest: sources/landscape-server/openapi.json
-      # Identifiers to skip. A trailing * matches a prefix.
-      ignore:
-        - "/api/internal/*"
-        - "healthz"
-      # warning (default) treats a gap as informational; error fails CI.
-      severity: warning
-      # Name recorded on each finding; defaults to the manifest filename.
-      source_name: landscape-server
+    run: "python3 scripts/undocumented_surface.py
+           --manifest sources/landscape-server/openapi.json
+           --targets docs/reference/api/**/*.md
+           --output results/api-surface.json"
+    results: "results/api-surface.json"
 
   # --- Your own check, reporting structured findings -----------------------
   # Any command in any language. Write JSON matching docs/reference/results.md

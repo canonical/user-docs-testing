@@ -14,8 +14,6 @@ from pathlib import Path
 
 import yaml
 
-from docs_testing.results import SEVERITIES
-
 CONFIG_VERSION = 1
 DEFAULT_CONFIG_NAME = "docs-testing.config.yml"
 
@@ -30,11 +28,10 @@ class BuiltIn:
     id: str
     kind: str
     summary: str
-    #: Required keys under `with:` for deterministic built-ins.
-    required_with: tuple[str, ...] = ()
-    optional_with: tuple[str, ...] = ()
 
 
+#: The reviews this tool ships. Deterministic checks are always your own command
+#: (`run:`); the scripts under tests/deterministic/ demonstrate how to write one.
 BUILTINS: dict[str, BuiltIn] = {
     "reference-review": BuiltIn(
         id="reference-review",
@@ -45,13 +42,6 @@ BUILTINS: dict[str, BuiltIn] = {
         id="reference-completeness",
         kind=AGENTIC,
         summary="Does user-facing product surface exist that the documentation never mentions?",
-    ),
-    "undocumented-surface": BuiltIn(
-        id="undocumented-surface",
-        kind=DETERMINISTIC,
-        summary="Diff a machine-readable interface manifest against the documentation.",
-        required_with=("manifest",),
-        optional_with=("ignore", "severity", "source_name"),
     ),
 }
 
@@ -87,7 +77,6 @@ TEST_KEYS = {
     "sources",
     "source_map",
     "generated",
-    "with",
     "enabled",
     "skip_deterministically_covered",
 }
@@ -157,7 +146,6 @@ class Test:
     sources: list[str] = field(default_factory=list)
     source_map: list[dict] = field(default_factory=list)
     generated: dict | None = None
-    options: dict = field(default_factory=dict)
     skip_deterministically_covered: bool = True
 
     def to_dict(self) -> dict:
@@ -399,13 +387,11 @@ def _parse_test(raw, index: int, config_targets: list[str], config_exclude: list
             "delete whichever one you did not mean",
         )
     if not uses and not run:
-        # A test named after a built-in is almost always a config from before
-        # `uses:` existed, so name the exact line to add.
         if name in BUILTINS:
             hint = f"add `uses: {name}`"
         else:
             hint = (
-                f"set `uses:` to a built-in ({', '.join(sorted(BUILTINS))}) "
+                f"set `uses:` to a shipped review ({', '.join(sorted(BUILTINS))}) "
                 "or `run:` to your own command"
             )
         raise ConfigError(
@@ -419,35 +405,16 @@ def _parse_test(raw, index: int, config_targets: list[str], config_exclude: list
             close = difflib.get_close_matches(uses, sorted(BUILTINS), n=1, cutoff=0.5)
             raise ConfigError(
                 f"{where}.uses",
-                f"unknown built-in check `{uses}`",
+                f"unknown review `{uses}`",
                 f"did you mean `{close[0]}`?" if close else
-                f"available built-ins: {', '.join(sorted(BUILTINS))} "
-                "(run `docs-testing list` to see them)",
+                f"available reviews: {', '.join(sorted(BUILTINS))}. "
+                "A deterministic check is your own command, so use `run:` instead",
             )
-        builtin = BUILTINS[uses]
-        kind = builtin.kind
-        options = _require_mapping(raw.get("with") or {}, f"{where}.with")
-        allowed_with = set(builtin.required_with) | set(builtin.optional_with)
-        if kind == DETERMINISTIC:
-            _check_keys(options, allowed_with, f"{where}.with")
-            for required in builtin.required_with:
-                if not options.get(required):
-                    raise ConfigError(
-                        f"{where}.with",
-                        f"`{required}` is required by the `{uses}` check",
-                        f"add `with: {{{required}: ...}}` — see docs/reference/configuration.md",
-                    )
-        elif options:
-            raise ConfigError(
-                f"{where}.with",
-                f"the `{uses}` check takes no `with:` options",
-                "remove the `with:` block",
-            )
+        kind = BUILTINS[uses].kind
     else:
         if not isinstance(run, str) or not run.strip():
             raise ConfigError(f"{where}.run", f"expected a command string, found {run!r}")
         kind = DETERMINISTIC
-        options = {}
 
     results = raw.get("results")
     if results is not None and not isinstance(results, str):
@@ -484,7 +451,6 @@ def _parse_test(raw, index: int, config_targets: list[str], config_exclude: list
         sources=sources or ([s for s in known_sources] if kind == AGENTIC else []),
         source_map=_parse_source_map(raw.get("source_map"), f"{where}.source_map", known_sources),
         generated=_parse_generated(raw.get("generated"), f"{where}.generated"),
-        options=dict(options),
         skip_deterministically_covered=_as_bool(
             raw.get("skip_deterministically_covered"),
             f"{where}.skip_deterministically_covered",

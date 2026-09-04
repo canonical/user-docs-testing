@@ -13,7 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from docs_testing.checks import source_evidence, undocumented_surface
+from docs_testing.checks import source_evidence
 from docs_testing.checks.globs import find_files
 from docs_testing.config import Config, Test
 from docs_testing.results import (
@@ -71,23 +71,6 @@ def _tail(text: str | None, lines: int = 20) -> str | None:
         return None
     trimmed = text.strip().splitlines()
     return "\n".join(trimmed[-lines:]) if trimmed else None
-
-
-def _run_builtin(test: Test, config: Config, root: Path) -> tuple[list[dict], list[dict]]:
-    if test.uses == "undocumented-surface":
-        manifest = test.options["manifest"]
-        manifests = [manifest] if isinstance(manifest, str) else list(manifest)
-        ignore = test.options.get("ignore") or []
-        return undocumented_surface.run(
-            manifests=manifests,
-            docs=test.targets,
-            exclude=test.exclude,
-            root=root,
-            ignore=[ignore] if isinstance(ignore, str) else list(ignore),
-            severity=test.options.get("severity", "warning"),
-            source_name=test.options.get("source_name"),
-        )
-    raise ValueError(f"`{test.uses}` is not a deterministic built-in")
 
 
 def _ingest_results(path: Path, label: str, test: Test, results: Results) -> None:
@@ -230,28 +213,6 @@ def run_deterministic(
 
 
 def _run_one(test: Test, config: Config, results: Results, *, root: Path, timeout: int) -> None:
-    if test.uses:
-        try:
-            findings, coverage = _run_builtin(test, config, root)
-        except Exception as exc:  # a built-in raising is a bug in this tool
-            results.errors.append(
-                ToolError(
-                    stage="check",
-                    test=test.name,
-                    message=f"the built-in `{test.uses}` check failed: {exc}",
-                    remedy="this is a bug in user-docs-testing; please report it",
-                )
-            )
-            return
-        results.tests_run += 1
-        for finding in findings:
-            finding["test"] = test.name
-            results.findings.append(finding)
-        for entry in coverage:
-            entry["test"] = test.name
-            results.coverage.append(entry)
-        return
-
     try:
         completed = _execute(test.run, cwd=root, label=test.name, timeout=timeout)
     except ValueError as exc:
