@@ -1,30 +1,249 @@
-# docs-testing.config.yml
+# docs-testing.config.yml — annotated reference example
 #
-# Copy this into your repository and adapt it. Every field is described in
-# docs/reference/configuration.md; the advanced ones are deliberately not shown
-# here. Run `docs-testing validate` after editing.
+# This shows EVERY supported field, using Landscape (a real product implemented
+# across several repositories, some of them private) as the worked example.
+# Copy it, delete what you do not need, and adapt the rest.
+#
+# For the smallest thing that works, see the README. For field-by-field detail,
+# see docs/reference/configuration.md. Check your edits with `docs-testing
+# validate`, or just push — CI validates before running anything.
 
 version: 1
 
-# The documentation to test.
-docs: "docs/reference/**/*.md"
+# ---------------------------------------------------------------------------
+# WHAT IS UNDER TEST
+#
+# `docs` is the default scope for every test; a test can narrow it. `exclude`
+# removes material that is in the tree but is not source-backed reference.
+# Both accept a single glob or a list. `**` works.
+# ---------------------------------------------------------------------------
+docs:
+  - "docs/reference/**/*.md"
 
-# Documentation that is in the tree but should not be tested. Optional.
 exclude:
+  # Narrative, not checkable against a product source.
   - "docs/reference/release-notes/**"
+  - "docs/reference/known-issues.md"
+  # Shared fragments, not standalone pages.
+  - "docs/reference/_includes/**"
 
-# The product this documentation describes. A finding has to be backed by
-# evidence from a source, so a review with no source cannot prove anything.
-# Add a `checkout:` block for each of these in .github/workflows/docs-testing.md.
+# ---------------------------------------------------------------------------
+# SOURCES OF TRUTH
+#
+# The product repositories the documentation is checked against. A finding has
+# to cite one, so a review with no sources cannot prove anything.
+#
+# Each source needs a matching `checkout:` block in
+# .github/workflows/docs-testing.md with `path: sources/<name>`.
+#
+# `required: true`  (default) — if it cannot be read, everything depending on it
+#                   is reported as BLOCKED. The run is incomplete, never a pass.
+# `required: false` — a specialized source. If absent, the areas needing it are
+#                   reported as UNSUPPORTED and the run continues.
+# ---------------------------------------------------------------------------
 sources:
-  - name: product
-    repo: my-org/my-product
+  # A public source needs no `auth`.
+  - name: landscape-client
+    repo: canonical/landscape-client
+    ref: main                    # branch, tag, or commit — pin for reproducibility
+    required: true
 
-# What to check. `docs-testing list` shows everything available.
+  # A private source. `auth` names a GitHub secret holding a read token with
+  # Contents: Read. The token itself never appears in this file.
+  - name: landscape-server
+    repo: canonical/landscape-server
+    ref: main
+    auth: secret:SOURCE_REPO_TOKEN
+    required: true
+    # `paths` narrows what is considered relevant inside a large source.
+    paths:
+      - "landscape/**"
+      - "docs/**"
+
+  # Optional sources: their absence downgrades coverage instead of blocking.
+  - name: landscape-server-operator
+    repo: canonical/landscape-server-operator
+    ref: main
+    auth: secret:SOURCE_REPO_TOKEN
+    required: false
+
+  - name: landscape-ui
+    repo: canonical/landscape-ui
+    ref: main
+    auth: secret:SOURCE_REPO_TOKEN
+    required: false
+
+# ---------------------------------------------------------------------------
+# OWNERSHIP
+#
+# Which source OWNS which documentation. Stated once here, used by every test,
+# so each area is checked against the component that PRODUCES the interface
+# rather than one that merely consumes it.
+#
+# Optional. With a single source you do not need it at all. With several, it is
+# what stops a review concluding "not found in the client repo, therefore wrong"
+# about something the server implements.
+# ---------------------------------------------------------------------------
+source_map:
+  - area: "Server configuration (service.conf, LANDSCAPE_* env vars)"
+    paths:
+      - "docs/reference/config/**"
+    sources:
+      - landscape-server
+
+  - area: "Landscape Server CLI"
+    paths:
+      - "docs/reference/lsctl.md"
+    sources:
+      - landscape-server
+
+  - area: "Client configuration and commands"
+    paths:
+      - "docs/reference/client/**"
+    sources:
+      - landscape-client
+
+  - area: "Server charm options and relations"
+    paths:
+      - "docs/reference/charm/**"
+    sources:
+      - landscape-server-operator
+
+  # Several owners: the server defines the semantics, the UI the current labels.
+  - area: "Web-portal terminology"
+    paths:
+      - "docs/reference/terms/**"
+    sources:
+      - landscape-server
+      - landscape-ui
+
+  # An empty list means NOTHING owns this. It is reported as unsupported and can
+  # never be reported as verified — which is the honest answer until you add and
+  # map a packaging source.
+  - area: "Supported versions, PPAs, and package policy"
+    paths:
+      - "docs/reference/supported-versions-and-ppas.md"
+    sources: []
+
+# ---------------------------------------------------------------------------
+# REPORTING
+# ---------------------------------------------------------------------------
+reporting:
+  # check-run (default, CI-gating) | issue | both
+  mode: check-run
+
+  # false reports error-severity findings without failing CI.
+  fail_on_findings: true
+
+  # Conclusion when nothing failed but part of the scope was never verified.
+  # Only `neutral` (visible, non-blocking) or `action_required` (blocks a
+  # required check). `success` is rejected — unverified is not verified.
+  on_incomplete_coverage: neutral
+
+  title: "Landscape docs testing"
+  labels:
+    - "docs-testing"
+
+# ---------------------------------------------------------------------------
+# TESTS
+#
+# `uses:` runs a check this tool ships. `run:` runs a command of your own.
+# A test declares one or the other, never both. `docs-testing list` prints
+# every available built-in.
+# ---------------------------------------------------------------------------
 tests:
-  # Does the documentation contradict the product?
+  # --- Shorthand ------------------------------------------------------------
+  # A bare string runs that built-in with every default: the top-level `docs`
+  # and `exclude`, all sources, ownership from `source_map`.
   - reference-review
 
+  # --- A review, fully specified -------------------------------------------
   # Does product surface exist that the documentation never mentions?
-  - reference-completeness
+  - name: reference-completeness
+    uses: reference-completeness
+
+    # Narrow the scope for this test only.
+    docs:
+      - "docs/reference/config/**/*.md"
+      - "docs/reference/lsctl.md"
+    exclude:
+      - "docs/reference/config/deprecated/**"
+
+    # Restrict which sources this test may consult at all. Ownership still
+    # comes from `source_map`; this only limits the candidates.
+    sources:
+      - landscape-server
+      - landscape-client
+
+    # Ownership override for this test only. Same shape as the top-level map;
+    # a test-level entry wins for the paths it matches. Rarely needed.
+    source_map:
+      - area: "Deprecated settings still documented for older releases"
+        paths:
+          - "docs/reference/config/legacy/**"
+        sources:
+          - landscape-server
+
+    # Auto-generated reference. mode: skip | annotate | deterministic-only
+    #   skip               ignore it entirely
+    #   annotate           review it, but label findings as generated
+    #   deterministic-only only deterministic checks may cover it
+    generated:
+      paths:
+        - "docs/reference/api/**"
+      mode: skip
+
+    # Do not repeat anything a deterministic check already reported. Default true.
+    skip_deterministically_covered: true
+
+  # --- A built-in deterministic check --------------------------------------
+  # Diffs a machine-readable interface description against the documentation.
+  # The manifest comes from the owning source: an OpenAPI export, a JSON Schema,
+  # a captured `--help`, or a plain list with one identifier per line. Generate
+  # it in a workflow step before this runs.
+  #
+  # A missing manifest is neither a pass nor an error: the surface simply could
+  # not be enumerated, so it is reported as unverified.
+  - name: server-api-surface
+    uses: undocumented-surface
+    docs:
+      - "docs/reference/api/**/*.md"
+    with:
+      manifest: sources/landscape-server/openapi.json
+      # Identifiers to skip. A trailing * matches a prefix.
+      ignore:
+        - "/api/internal/*"
+        - "healthz"
+      # warning (default) treats a gap as informational; error fails CI.
+      severity: warning
+      # Name recorded on each finding; defaults to the manifest filename.
+      source_name: landscape-server
+
+  # --- Your own check, reporting structured findings -----------------------
+  # Any command in any language. Write JSON matching docs/reference/results.md
+  # and every finding appears in the same report as everything else.
+  #
+  # Commands run WITHOUT a shell, so configuration cannot inject one. If you
+  # need a pipeline, put it in a script and call the script.
+  - name: style-guide
+    run: "python3 scripts/check_style.py --output results/style.json"
+    results: "results/style.json"
+    setup:
+      - "pip install -r scripts/requirements.txt"
+
+  # --- Your own check, pass/fail only --------------------------------------
+  # With no `results:`, the exit status is the answer: zero passes, non-zero
+  # becomes a finding carrying the command's output. Enough to adopt a linter
+  # you already have.
+  - name: vale
+    run: "vale --minAlertLevel=error docs/reference"
+
+  # --- Temporarily disabled ------------------------------------------------
+  # Turn a test off without deleting its configuration.
+  - name: legacy-terminology
+    uses: reference-review
+    docs:
+      - "docs/reference/legacy/**/*.md"
+    enabled: false
+
 

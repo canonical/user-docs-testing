@@ -81,25 +81,6 @@ git add .github/workflows/ docs-testing.config.yml && git commit
 GitHub Actions cannot run Markdown, so `gh aw compile` generates the `.lock.yml`
 that Actions actually executes. It has to be committed next to its `.md`.
 
-## Check it before you push
-
-The checks that do not need an AI engine also run locally:
-
-```bash
-pipx install git+https://github.com/canonical/user-docs-testing
-```
-
-```bash
-docs-testing validate   # is the configuration correct?
-docs-testing run        # run the deterministic checks
-docs-testing list       # what checks are available?
-```
-
-`validate` reports configuration mistakes with a location and a fix, tells you if
-the config and the workflow disagree about which sources get checked out, and
-lists any secrets you still need to add. CI runs it too, before anything else, so
-a typo costs you a fifteen-second step rather than a confusing review.
-
 ## Reading the result
 
 Five outcomes, and they never collapse into each other:
@@ -117,12 +98,30 @@ results file, or a private source that failed to clone must never come back as
 "your documentation passed". Full detail in
 [the results reference](docs/reference/results.md).
 
+Your configuration is checked first, before any test runs, so a typo fails in
+seconds with a message naming the field and the fix rather than surfacing later
+as a confusing review.
+
 ## Examples
 
-- [examples/minimal](examples/minimal/) — the common case, runnable offline in
-  one command. Start here.
+- [examples/minimal](examples/minimal/) — the common case. Start here.
 - [examples/landscape](examples/landscape/) — a real product implemented across
   six repositories, some private, with source ownership and partial coverage.
+- [docs-testing.config.example.yml](docs-testing.config.example.yml) — every
+  supported field, annotated, with real values.
+
+## Optional: run the checks locally
+
+Nothing below is required. CI runs all of this for you. It exists for a faster
+loop while you are writing your configuration.
+
+```bash
+pipx install git+https://github.com/canonical/user-docs-testing
+
+docs-testing validate   # is my configuration correct?
+docs-testing run        # run the checks that need no AI engine
+docs-testing list       # what checks are available?
+```
 
 ## Going further
 
