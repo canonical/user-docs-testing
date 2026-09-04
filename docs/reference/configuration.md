@@ -210,5 +210,11 @@ from before that, `docs-testing validate` names each field to change:
 | `command:` | `run:` |
 | `results_file:` | `results:` |
 | `type: agentic` / `type: deterministic` | removed — inferred from `uses` or `run` |
+| `engine:` on a test | removed — the engine is set once in the workflow |
+| a test named after a built-in | add `uses: <that name>` |
 | a `source-availability` test entry | removed — source evidence is now collected automatically |
 | a `undocumented_surface.py` command | `uses: undocumented-surface` with `with.manifest` |
+
+Your workflow changes too: drop the `canonical/user-docs-testing` checkout and
+the Python `steps:` that ran the orchestrator, and replace them with a single
+step, `uses: canonical/user-docs-testing/actions/docs-tests@main`.

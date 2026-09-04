@@ -21,6 +21,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+from docs_testing.checks.source_evidence import inspect_source  # noqa: E402
 from docs_testing.config import ConfigError, load  # noqa: E402
 from docs_testing.results import (  # noqa: E402
     ERROR,
@@ -387,6 +388,30 @@ class ExitStatusAdapter(ContractTest):
         self.assertEqual(payload["errors"], [])
         self.assertEqual(len(payload["findings"]), 1)
 
+    def test_the_command_output_reaches_the_report(self):
+        # For an exit-status check this output is all the check had to say.
+        script = self.project.file(
+            "linter.py",
+            "import sys; print('docs/a.md: broken link -> nope.md'); sys.exit(1)",
+        )
+        self.project.doc("cli.md", "Anything.")
+        self.project.config(
+            f"""
+            version: 1
+            docs: "docs/reference/**/*.md"
+            tests:
+              - name: linter
+                run: "{sys.executable} {script}"
+            """
+        )
+        payload, _ = self.project.run()
+        self.assertIn("broken link", payload["findings"][0]["detail"])
+
+        from docs_testing import report
+
+        self.assertIn("broken link", report.render_text(payload))
+        self.assertIn("broken link", report.render_markdown(payload))
+
 
 class CommandSafety(ContractTest):
     def test_shell_syntax_is_refused_with_an_explanation(self):
@@ -484,6 +509,84 @@ class PlanHandedToTheAgent(ContractTest):
         self.assertEqual(review["exclude"], ["docs/reference/old/**"])
         self.assertEqual(review["sources"], ["product"])
         self.assertEqual(plan["reporting"]["on_incomplete_coverage"], "neutral")
+
+
+class EmptyScope(ContractTest):
+    def test_a_glob_matching_no_documentation_is_not_a_pass(self):
+        self.project.doc("cli.md", "Options: --verbose.")
+        self.project.source("product")
+        self.project.config(
+            """
+            version: 1
+            docs: "docs/handbook/**/*.md"
+            sources:
+              - name: product
+                repo: a/b
+            tests:
+              - reference-review
+            """
+        )
+        payload, _ = self.project.run()
+        self.assertStatus(payload, INCOMPLETE)
+        detail = " ".join(c.get("detail") or "" for c in payload["coverage"])
+        self.assertIn("examined nothing", detail)
+
+    def test_a_glob_that_does_match_is_unaffected(self):
+        self.project.doc("cli.md", "Options: --verbose.")
+        self.project.source("product")
+        self.project.config(
+            """
+            version: 1
+            docs: "docs/reference/**/*.md"
+            sources:
+              - name: product
+                repo: a/b
+            tests:
+              - reference-review
+            """
+        )
+        payload, _ = self.project.run()
+        self.assertStatus(payload, PASS)
+
+
+class SourceEvidence(ContractTest):
+    """`commit` is documented as hard proof a source was really checked out."""
+
+    def test_a_plain_directory_inside_a_repository_reports_no_commit(self):
+        # `git -C` searches parent directories, so a source that is not its own
+        # clone must not inherit the surrounding repository's HEAD.
+        subprocess.run(["git", "init", "-q"], cwd=self.project.root, check=True)
+        self.project.source("product", {"README.md": "not a clone"})
+
+        evidence = inspect_source("product", self.project.root / "sources")
+
+        self.assertTrue(evidence["available"])
+        self.assertIsNone(evidence["commit"])
+
+    def test_a_real_checkout_reports_its_own_commit(self):
+        path = self.project.root / "sources" / "product"
+        path.mkdir(parents=True)
+        (path / "README.md").write_text("x", encoding="utf-8")
+        for args in (
+            ["git", "init", "-q"],
+            ["git", "config", "user.email", "t@example.com"],
+            ["git", "config", "user.name", "t"],
+            ["git", "add", "-A"],
+            ["git", "commit", "-qm", "initial"],
+        ):
+            subprocess.run(args, cwd=path, check=True)
+
+        evidence = inspect_source("product", self.project.root / "sources")
+
+        self.assertTrue(evidence["available"])
+        self.assertEqual(len(evidence["commit"]), 40)
+
+    def test_a_missing_source_is_unavailable_with_no_commit(self):
+        evidence = inspect_source("absent", self.project.root / "sources")
+
+        self.assertFalse(evidence["available"])
+        self.assertIsNone(evidence["commit"])
+        self.assertEqual(evidence["files_seen"], 0)
 
 
 class ConfigurationErrors(unittest.TestCase):

@@ -41,8 +41,18 @@ Then, in your documentation repository:
 gh aw add canonical/user-docs-testing/docs-testing
 ```
 
-That adds `.github/workflows/docs-testing.md`, compiles it, and records where it
-came from so `gh aw update docs-testing` can pick up improvements later.
+That adds `.github/workflows/docs-testing.md`, **compiles it for you**, and
+records where it came from so `gh aw update docs-testing` can pick up
+improvements later.
+
+Not using Copilot? Choose the engine at install time:
+
+```bash
+gh aw add canonical/user-docs-testing/docs-testing --engine claude
+```
+
+`copilot`, `claude`, `codex`, and `gemini` are all supported; each needs its own
+secret. See [engines and tokens](docs/reference/engines.md).
 
 ## Configure
 
@@ -129,6 +139,10 @@ docs-testing list       # what checks are available?
   including source ownership, generated documentation, and custom checks.
 - [Results reference](docs/reference/results.md) — outcomes, coverage, and the
   schema for writing your own check.
+- [Scheduling](docs/reference/scheduling.md) — cadence, manual runs, and running
+  different scopes at different frequencies.
 - [Engines, tokens, and private sources](docs/reference/engines.md) — which
   credential does what, and how to keep a private source safe.
+- [How it works](docs/reference/how-it-works.md) — the lock file, what compiles
+  when, and what happens during a run.
 - [Versioning](docs/reference/versioning.md) — what is stable and what is not.

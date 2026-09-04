@@ -33,6 +33,15 @@ def _location(finding: dict) -> str:
     return f"{doc_file}:{line}" if line else str(doc_file)
 
 
+def _detail_lines(finding: dict, indent: str, limit: int = 10) -> list[str]:
+    """Output captured from a command. For an exit-status check this is the only
+    thing the check had to say, so dropping it would leave the user nothing."""
+    detail = finding.get("detail")
+    if not detail:
+        return []
+    return [f"{indent}| {line}" for line in str(detail).splitlines()[:limit]]
+
+
 def render_text(payload: dict) -> str:
     summary = payload["summary"]
     status = summary["status"]
@@ -58,12 +67,14 @@ def render_text(payload: dict) -> str:
         out.append(f"Problems ({len(blocking)}):")
         for finding in blocking:
             out.append(f"  {_location(finding)}  {finding['message']}  [{finding['test']}]")
+            out.extend(_detail_lines(finding, "      "))
         out.append("")
 
     if warnings:
         out.append(f"Warnings ({len(warnings)}) — reported, not blocking:")
         for finding in warnings[:20]:
             out.append(f"  {_location(finding)}  {finding['message']}  [{finding['test']}]")
+            out.extend(_detail_lines(finding, "      "))
         if len(warnings) > 20:
             out.append(f"  ... and {len(warnings) - 20} more")
         out.append("")
@@ -125,6 +136,11 @@ def render_markdown(payload: dict) -> str:
         out.append("")
         for finding in blocking:
             out.append(f"- `{_location(finding)}` — {finding['message']}")
+            if finding.get("detail"):
+                out.append("")
+                out.append("  ```")
+                out.extend(f"  {line}" for line in str(finding["detail"]).splitlines()[:10])
+                out.append("  ```")
         out.append("")
 
     warnings = [f for f in payload["findings"] if f.get("severity") != "error"]

@@ -13,10 +13,16 @@ engine generally cannot read your private repository, and vice versa.
 
 ## Choosing an engine
 
-The shipped workflow uses `engine: copilot` with `copilot-requests: write`
-permission, which authenticates using the workflow's own token. That needs no
-secret at all, but does require your organization to have centralized Copilot
-billing.
+Pick the engine when you install, and gh-aw writes and compiles the workflow for
+you:
+
+```bash
+gh aw add canonical/user-docs-testing/docs-testing --engine claude
+```
+
+The default is `copilot` with `copilot-requests: write` permission, which
+authenticates using the workflow's own token. That needs no secret at all, but
+does require your organization to have centralized Copilot billing.
 
 If it does not, remove the `copilot-requests: write` line and add a secret
 instead:
@@ -32,10 +38,11 @@ OpenAI-compatible providers such as OpenRouter also work, either via
 `engine: codex` with `OPENAI_BASE_URL`, or via Copilot BYOK with
 `COPILOT_PROVIDER_BASE_URL`. The provider hostname must be added to
 `network.allowed`. See the
-[gh-aw engines reference](https://githubnext.github.io/gh-aw/reference/engines/).
+[gh-aw engines reference](https://github.github.io/gh-aw/reference/engines/).
 
-To switch engines: change `engine:` in `.github/workflows/docs-testing.md`, run
-`gh aw compile`, commit the regenerated `.lock.yml`, and add the matching secret.
+To switch engines after installing: change `engine:` in
+`.github/workflows/docs-testing.md`, run `gh aw compile`, commit the regenerated
+`.lock.yml`, and add the matching secret.
 
 ## Private sources
 

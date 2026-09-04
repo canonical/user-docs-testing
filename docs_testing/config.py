@@ -100,13 +100,20 @@ SOURCE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 REPO_RE = re.compile(r"^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$")
 AUTH_RE = re.compile(r"^secret:[A-Za-z_][A-Za-z0-9_]*$")
 
-# Keys that used to exist, mapped to what replaced them. Kept so an older config
-# gets a migration instruction instead of "unknown key".
-RENAMED_KEYS = {
-    "targets": "docs",
-    "results_file": "results",
-    "command": "run",
-    "type": "uses/run (the kind of test is now inferred)",
+# Keys that used to exist, mapped to what to do about them. Kept so an older
+# config gets a migration instruction instead of a bare "unknown key".
+REPLACED_KEYS = {
+    "targets": "rename it to `docs`",
+    "results_file": "rename it to `results`",
+    "command": "rename it to `run`",
+    "type": (
+        "delete it — a test is a built-in review or check if it has `uses`, "
+        "and your own command if it has `run`"
+    ),
+    "engine": (
+        "delete it — the AI engine is set once in the workflow's `engine:` field, "
+        "not per test"
+    ),
 }
 
 
@@ -243,12 +250,8 @@ class Config:
 
 
 def _unknown_key(key: str, allowed: set[str], where: str) -> ConfigError:
-    if key in RENAMED_KEYS:
-        return ConfigError(
-            where,
-            f"`{key}` is no longer supported",
-            f"rename it to `{RENAMED_KEYS[key]}`",
-        )
+    if key in REPLACED_KEYS:
+        return ConfigError(where, f"`{key}` is no longer supported", REPLACED_KEYS[key])
     close = difflib.get_close_matches(key, sorted(allowed), n=1, cutoff=0.6)
     hint = f"did you mean `{close[0]}`?" if close else f"accepted keys: {', '.join(sorted(allowed))}"
     return ConfigError(where, f"unknown key `{key}`", hint)
@@ -414,10 +417,19 @@ def _parse_test(raw, index: int, config_docs: list[str], config_exclude: list[st
             "delete whichever one you did not mean",
         )
     if not uses and not run:
+        # A test named after a built-in is almost always a config from before
+        # `uses:` existed, so name the exact line to add.
+        if name in BUILTINS:
+            hint = f"add `uses: {name}`"
+        else:
+            hint = (
+                f"set `uses:` to a built-in ({', '.join(sorted(BUILTINS))}) "
+                "or `run:` to your own command"
+            )
         raise ConfigError(
             where,
             "the test does nothing: it has neither `uses` nor `run`",
-            f"set `uses:` to a built-in ({', '.join(sorted(BUILTINS))}) or `run:` to your own command",
+            hint,
         )
 
     if uses:

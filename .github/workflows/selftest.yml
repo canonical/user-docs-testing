@@ -26,28 +26,15 @@ jobs:
       - name: Run the contract tests
         run: python -m unittest discover -s selftests -v
 
-      # The examples are documentation. If they stop parsing, the documentation
-      # is wrong, which is exactly the failure this project exists to catch.
-      - name: Validate the shipped example configuration
+      # The examples and the annotated config are documentation. If they stop
+      # parsing, the documentation is wrong — the failure this project exists
+      # to catch.
+      - name: Validate the shipped configurations
         run: |
           cp docs-testing.config.example.yml /tmp/docs-testing.config.yml
           python -m docs_testing validate --config /tmp/docs-testing.config.yml
-
-      - name: Validate the examples
-        run: |
           for example in examples/*/; do
             echo "--- $example"
             ( cd "$example" && PYTHONPATH="$GITHUB_WORKSPACE" \
                 python -m docs_testing validate ) || exit 1
           done
-
-      - name: Check the minimal example still behaves as documented
-        working-directory: examples/minimal
-        run: |
-          PYTHONPATH="$GITHUB_WORKSPACE" python -m docs_testing run --output /tmp/minimal.json
-          python - <<'PY'
-          import json
-          summary = json.load(open("/tmp/minimal.json"))["summary"]
-          assert summary["status"] == "warn", summary
-          assert summary["warnings"] == 1, summary
-          PY

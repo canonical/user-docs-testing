@@ -27,7 +27,10 @@ imports:
 on:
   workflow_dispatch:
   # Scattered by gh-aw to a stable per-repository time, so many repositories
-  # running this do not all start at once.
+  # running this do not all start at once. `weekly on monday`, `daily`, and
+  # `weekly on friday at 09:00` all work; monthly needs raw cron (`0 6 1 * *`).
+  # Several entries are allowed. To run different scopes on different cadences,
+  # install this workflow twice with separate configs — see docs/reference/scheduling.md.
   schedule:
     - cron: "weekly on monday"
   # SECURITY — private sources and untrusted pull requests:
@@ -48,8 +51,11 @@ permissions:
   # COPILOT_GITHUB_TOKEN secret instead. See docs/reference/engines.md.
   copilot-requests: write
 
-# Any engine gh-aw supports works here; see docs/reference/engines.md for the
-# secret each one needs. Run `gh aw compile` after changing it.
+# The AI engine that performs the reviews. Pick it at install time instead of
+# editing here:  gh aw add canonical/user-docs-testing/docs-testing --engine claude
+# Supported: copilot | claude | codex | gemini. Each needs its own secret, except
+# copilot with the permission above. If you change this line by hand, run
+# `gh aw compile` afterwards. See docs/reference/engines.md.
 engine: copilot
 
 checkout:
@@ -80,6 +86,10 @@ checkout:
 steps:
   - name: Run documentation checks
     uses: canonical/user-docs-testing/actions/docs-tests@main
+    # Defaults shown; set `config` to run a different scope on this schedule.
+    # with:
+    #   config: docs-testing.config.yml
+    #   sources-root: sources
 
 safe-outputs:
   create-check-run:
