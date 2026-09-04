@@ -29,7 +29,7 @@ So the practical contract today is:
 
 | Interface | Stability | Notes |
 | --------- | --------- | ----- |
-| `docs-testing.config.yml` | Settling | The format changed once before release. `validate` names any field that needs renaming. |
+| `docs-testing.config.yml` | Settling | Fields may still be added or renamed before the first tag. |
 | The five outcomes and their Check Run conclusions | Stable in intent | The vocabulary may gain a state; the guarantee that a broken tool never reports as a pass will not change. |
 | The coverage states | Stable | |
 | Finding and coverage fields in a custom check's results file | Stable | New optional fields may be added. |

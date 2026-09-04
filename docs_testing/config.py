@@ -100,22 +100,6 @@ SOURCE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 REPO_RE = re.compile(r"^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$")
 AUTH_RE = re.compile(r"^secret:[A-Za-z_][A-Za-z0-9_]*$")
 
-# Keys that used to exist, mapped to what to do about them. Kept so an older
-# config gets a migration instruction instead of a bare "unknown key".
-REPLACED_KEYS = {
-    "targets": "rename it to `docs`",
-    "results_file": "rename it to `results`",
-    "command": "rename it to `run`",
-    "type": (
-        "delete it — a test is a built-in review or check if it has `uses`, "
-        "and your own command if it has `run`"
-    ),
-    "engine": (
-        "delete it — the AI engine is set once in the workflow's `engine:` field, "
-        "not per test"
-    ),
-}
-
 
 class ConfigError(Exception):
     """A configuration problem, reported with a location and a suggested fix."""
@@ -250,8 +234,6 @@ class Config:
 
 
 def _unknown_key(key: str, allowed: set[str], where: str) -> ConfigError:
-    if key in REPLACED_KEYS:
-        return ConfigError(where, f"`{key}` is no longer supported", REPLACED_KEYS[key])
     close = difflib.get_close_matches(key, sorted(allowed), n=1, cutoff=0.6)
     hint = f"did you mean `{close[0]}`?" if close else f"accepted keys: {', '.join(sorted(allowed))}"
     return ConfigError(where, f"unknown key `{key}`", hint)

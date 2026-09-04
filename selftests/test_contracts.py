@@ -600,10 +600,9 @@ class ConfigurationErrors(unittest.TestCase):
                 load(path)
             return caught.exception
 
-    def test_renamed_field_gets_a_migration_instruction(self):
-        error = self._load('version: 1\ntargets: "d/**"\ntests: [reference-review]\n')
-        self.assertIn("targets", error.problem)
-        self.assertIn("docs", error.hint)
+    def test_an_unknown_top_level_key_is_rejected(self):
+        error = self._load('version: 1\ndocs: "d/**"\nnonsense: 1\ntests: [reference-review]\n')
+        self.assertIn("nonsense", error.problem)
 
     def test_misspelled_builtin_suggests_the_right_one(self):
         error = self._load('version: 1\ndocs: "d/**"\ntests: [reference-revue]\n')
@@ -670,11 +669,12 @@ class CommandLine(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "docs-testing.config.yml").write_text(
-                'version: 1\ntargets: "d/**"\ntests: [reference-review]\n', encoding="utf-8"
+                'version: 1\ndocs: "d/**"\nnonsense: 1\ntests: [reference-review]\n',
+                encoding="utf-8",
             )
             result = self._run(["validate"], root)
             self.assertEqual(result.returncode, EXIT_TOOL_ERROR)
-            self.assertIn("no longer supported", result.stderr)
+            self.assertIn("unknown key", result.stderr)
 
     def test_run_with_a_bad_config_still_writes_results_recording_the_error(self):
         with tempfile.TemporaryDirectory() as tmp:

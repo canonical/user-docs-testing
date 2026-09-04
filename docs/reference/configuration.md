@@ -198,23 +198,3 @@ reporting:
 | `on_incomplete_coverage` | `neutral` | Conclusion when verification was incomplete. Only `neutral` or `action_required`; `success` is rejected. |
 | `title` | `Documentation testing` | Check Run title. |
 | `labels` | `["docs-testing"]` | Labels for issue mode. |
-
-## Migrating from the earlier format
-
-The configuration format changed before the first release. If you have a config
-from before that, `docs-testing validate` names each field to change:
-
-| Old | New |
-| --- | --- |
-| `targets:` | `docs:` |
-| `command:` | `run:` |
-| `results_file:` | `results:` |
-| `type: agentic` / `type: deterministic` | removed — inferred from `uses` or `run` |
-| `engine:` on a test | removed — the engine is set once in the workflow |
-| a test named after a built-in | add `uses: <that name>` |
-| a `source-availability` test entry | removed — source evidence is now collected automatically |
-| a `undocumented_surface.py` command | `uses: undocumented-surface` with `with.manifest` |
-
-Your workflow changes too: drop the `canonical/user-docs-testing` checkout and
-the Python `steps:` that ran the orchestrator, and replace them with a single
-step, `uses: canonical/user-docs-testing/actions/docs-tests@main`.
