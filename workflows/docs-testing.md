@@ -12,15 +12,13 @@ description: "Test documentation against the product it describes."
 emoji: "🔎"
 labels: ["docs-testing", "automation"]
 
-# The shipped reference tests. `reference-common.md` holds the rules they share;
-# the other two hold the question each one answers. All are imported, but only
-# the tests listed in your `docs-testing.config.yml` actually run — so there is
-# normally no reason to edit this block.
+# The shipped reference tests, each a self-contained instruction file. Both are
+# imported, but only the tests listed in your `docs-testing.config.yml` actually
+# run — so there is normally no reason to edit this block.
 #
 # No release has been tagged yet, so these track `main`. Pin them to a tag once
 # one exists; see docs/reference/versioning.md.
 imports:
-  - canonical/user-docs-testing/tests/agentic/reference-common.md@main
   - canonical/user-docs-testing/tests/agentic/reference-review.md@main
   - canonical/user-docs-testing/tests/agentic/reference-completeness.md@main
 
@@ -113,14 +111,26 @@ single check run.
    complete. Report `action_required` saying so, and review nothing — without it
    you cannot tell which sources were actually available.
 
-2. **Run each test in `plan.agentic_tests`.** For each, apply the imported
-   instructions whose title names that test, over its `docs` minus `exclude`,
-   following the shared rules in "Documentation review: rules common to every
-   reference test" above. Run every listed test, and only those.
+2. **Run each test in `plan.agentic_tests`.** For each one, apply the imported
+   instructions whose title names that test, over its `targets` minus `exclude`.
+   Follow those criteria and do not impose criteria of your own. Run every
+   listed test, and only those.
 
 3. **Report once.** Emit exactly one `create_check_run` covering the
-   deterministic and agentic results together, using the conclusion order and
-   report structure from the shared rules.
+   deterministic and agentic results together.
+
+   Choose the conclusion in this order, stopping at the first that applies:
+   - `action_required` — `errors` in `results/all.json` is not empty. A check
+     failed to run, so the results are not trustworthy. Say so plainly; do not
+     describe the documentation as passing or failing.
+   - `failure` — a finding of severity `error`, and `fail_on_findings` is true.
+   - `plan.reporting.on_incomplete_coverage` (default `neutral`) — no blocking
+     finding, but an area is blocked or unsupported. Never `success` here.
+   - `neutral` — only `warning`-severity findings.
+   - `success` — everything in scope reviewed or skipped, with no findings.
+
+   Group findings by test and by documentation file, and list blocked or
+   unsupported areas separately so a reader can see what was NOT verified.
 
 You must emit a `create_check_run` even when there is nothing to fix.
 

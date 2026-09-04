@@ -67,7 +67,7 @@ steps:
 ```yaml
 # docs-testing.weekly.yml — deterministic only, cheap and fast
 version: 1
-docs: "docs/reference/**/*.md"
+targets: "docs/reference/**/*.md"
 sources:
   - name: product
     repo: my-org/my-product
@@ -81,7 +81,7 @@ tests:
 ```yaml
 # docs-testing.monthly.yml — the full review
 version: 1
-docs: "docs/reference/**/*.md"
+targets: "docs/reference/**/*.md"
 sources:
   - name: product
     repo: my-org/my-product

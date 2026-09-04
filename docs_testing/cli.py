@@ -38,7 +38,7 @@ STARTER_CONFIG = """\
 version: 1
 
 # The documentation to test.
-docs: "docs/reference/**/*.md"
+targets: "docs/reference/**/*.md"
 
 # The product this documentation describes. Findings must be backed by evidence
 # from a source, so a review with no source cannot prove anything.
@@ -78,7 +78,7 @@ def cmd_init(args) -> int:
     sys.stdout.write(
         f"Wrote {path}\n\n"
         "Next:\n"
-        "  1. Point `docs:` at your documentation and `sources.repo` at your product.\n"
+        "  1. Point `targets:` at your documentation and `sources.repo` at your product.\n"
         "  2. Run `docs-testing validate`.\n"
         "  3. Install the workflow:  gh aw add canonical/user-docs-testing/docs-testing\n"
     )
@@ -168,7 +168,7 @@ def cmd_validate(args) -> int:
     # Built as one block and printed in order: interleaving stdout and stderr
     # produced a report that said "Problems:" and "is valid" in the same breath.
     lines: list[str] = ["", f"Configuration: {args.config}", ""]
-    lines.append(f"  documentation: {', '.join(config.docs) or '(per-test)'}")
+    lines.append(f"  documentation: {', '.join(config.targets) or '(per-test)'}")
     if config.exclude:
         lines.append(f"  excluded:      {', '.join(config.exclude)}")
     lines.append(

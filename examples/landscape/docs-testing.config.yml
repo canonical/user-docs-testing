@@ -8,7 +8,7 @@
 version: 1
 
 # All Landscape reference documentation, minus material that is not source-backed.
-docs: "docs/reference/**/*.md"
+targets: "docs/reference/**/*.md"
 exclude:
   # Narrative, not source-backed reference.
   - "docs/reference/release-notes/**"

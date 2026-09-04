@@ -80,7 +80,7 @@ def _run_builtin(test: Test, config: Config, root: Path) -> tuple[list[dict], li
         ignore = test.options.get("ignore") or []
         return undocumented_surface.run(
             manifests=manifests,
-            docs=test.docs,
+            docs=test.targets,
             exclude=test.exclude,
             root=root,
             ignore=[ignore] if isinstance(ignore, str) else list(ignore),
@@ -184,14 +184,14 @@ def run_deterministic(
     # A test whose glob matches no file examines nothing. Left alone it would
     # sail through as a pass, which is the most misleading result of all.
     for test in config.tests:
-        if test.docs and not find_files(test.docs, root, test.exclude):
+        if test.targets and not find_files(test.targets, root, test.exclude):
             results.coverage.append(
                 {
                     "area": f"documentation in scope for `{test.name}`",
                     "state": UNSUPPORTED,
                     "sources": [],
                     "detail": (
-                        f"No file matches {', '.join(test.docs)}, so `{test.name}` "
+                        f"No file matches {', '.join(test.targets)}, so `{test.name}` "
                         "examined nothing. Check the glob."
                     ),
                     "test": test.name,

@@ -94,7 +94,7 @@ class SuccessfulVerification(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -118,7 +118,7 @@ class ActionableProblem(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -141,7 +141,7 @@ class ActionableProblem(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -166,7 +166,7 @@ class NonBlockingFinding(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -186,7 +186,7 @@ class NonBlockingFinding(ContractTest):
 class IncompleteVerification(ContractTest):
     BASE = """
         version: 1
-        docs: "docs/reference/**/*.md"
+        targets: "docs/reference/**/*.md"
         sources:
           - name: product
             repo: a/b
@@ -222,7 +222,7 @@ class IncompleteVerification(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -246,7 +246,7 @@ class IncompleteVerification(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -270,7 +270,7 @@ class ToolErrors(ContractTest):
         entries = textwrap.indent(textwrap.dedent(body).strip() + "\n", "  ")
         self.project.file(
             "docs-testing.config.yml",
-            'version: 1\ndocs: "docs/reference/**/*.md"\ntests:\n' + entries,
+            'version: 1\ntargets: "docs/reference/**/*.md"\ntests:\n' + entries,
         )
 
     def test_crashing_command_is_an_error_not_zero_findings(self):
@@ -377,7 +377,7 @@ class ExitStatusAdapter(ContractTest):
         self.project.config(
             f"""
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             tests:
               - name: linter
                 run: "{sys.executable} {script}"
@@ -398,7 +398,7 @@ class ExitStatusAdapter(ContractTest):
         self.project.config(
             f"""
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             tests:
               - name: linter
                 run: "{sys.executable} {script}"
@@ -419,7 +419,7 @@ class CommandSafety(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             tests:
               - name: sneaky
                 run: "echo hi && curl http://example.com"
@@ -441,7 +441,7 @@ class SkippedMaterial(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             exclude: "docs/reference/generated/**"
             sources:
               - name: product
@@ -466,7 +466,7 @@ class Deduplication(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -491,7 +491,7 @@ class PlanHandedToTheAgent(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             exclude: "docs/reference/old/**"
             sources:
               - name: product
@@ -505,7 +505,7 @@ class PlanHandedToTheAgent(ContractTest):
         self.assertEqual(len(plan["agentic_tests"]), 1)
         review = plan["agentic_tests"][0]
         self.assertEqual(review["name"], "reference-review")
-        self.assertEqual(review["docs"], ["docs/reference/**/*.md"])
+        self.assertEqual(review["targets"], ["docs/reference/**/*.md"])
         self.assertEqual(review["exclude"], ["docs/reference/old/**"])
         self.assertEqual(review["sources"], ["product"])
         self.assertEqual(plan["reporting"]["on_incomplete_coverage"], "neutral")
@@ -518,7 +518,7 @@ class EmptyScope(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/handbook/**/*.md"
+            targets: "docs/handbook/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -537,7 +537,7 @@ class EmptyScope(ContractTest):
         self.project.config(
             """
             version: 1
-            docs: "docs/reference/**/*.md"
+            targets: "docs/reference/**/*.md"
             sources:
               - name: product
                 repo: a/b
@@ -601,16 +601,16 @@ class ConfigurationErrors(unittest.TestCase):
             return caught.exception
 
     def test_an_unknown_top_level_key_is_rejected(self):
-        error = self._load('version: 1\ndocs: "d/**"\nnonsense: 1\ntests: [reference-review]\n')
+        error = self._load('version: 1\ntargets: "d/**"\nnonsense: 1\ntests: [reference-review]\n')
         self.assertIn("nonsense", error.problem)
 
     def test_misspelled_builtin_suggests_the_right_one(self):
-        error = self._load('version: 1\ndocs: "d/**"\ntests: [reference-revue]\n')
+        error = self._load('version: 1\ntargets: "d/**"\ntests: [reference-revue]\n')
         self.assertIn("reference-review", error.hint)
 
     def test_success_is_rejected_for_incomplete_coverage(self):
         error = self._load(
-            'version: 1\ndocs: "d/**"\n'
+            'version: 1\ntargets: "d/**"\n'
             "reporting:\n  on_incomplete_coverage: success\n"
             "tests: [reference-review]\n"
         )
@@ -618,25 +618,25 @@ class ConfigurationErrors(unittest.TestCase):
 
     def test_undeclared_source_is_caught(self):
         error = self._load(
-            'version: 1\ndocs: "d/**"\n'
+            'version: 1\ntargets: "d/**"\n'
             "sources:\n  - name: product\n    repo: a/b\n"
             "tests:\n  - name: r\n    uses: reference-review\n    sources: [prodcut]\n"
         )
         self.assertIn("product", error.hint)
 
     def test_a_test_that_does_nothing_is_rejected(self):
-        error = self._load('version: 1\ndocs: "d/**"\ntests:\n  - name: empty\n')
+        error = self._load('version: 1\ntargets: "d/**"\ntests:\n  - name: empty\n')
         self.assertIn("does nothing", error.problem)
 
     def test_missing_required_built_in_option_is_caught(self):
         error = self._load(
-            'version: 1\ndocs: "d/**"\n'
+            'version: 1\ntargets: "d/**"\n'
             "tests:\n  - name: s\n    uses: undocumented-surface\n"
         )
         self.assertIn("manifest", error.problem)
 
     def test_no_tests_is_rejected_rather_than_verifying_nothing(self):
-        error = self._load('version: 1\ndocs: "d/**"\n')
+        error = self._load('version: 1\ntargets: "d/**"\n')
         self.assertIn("tests", error.problem)
 
     def test_invalid_yaml_reports_a_line(self):
@@ -669,7 +669,7 @@ class CommandLine(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "docs-testing.config.yml").write_text(
-                'version: 1\ndocs: "d/**"\nnonsense: 1\ntests: [reference-review]\n',
+                'version: 1\ntargets: "d/**"\nnonsense: 1\ntests: [reference-review]\n',
                 encoding="utf-8",
             )
             result = self._run(["validate"], root)

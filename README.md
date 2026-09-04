@@ -61,7 +61,7 @@ Create `docs-testing.config.yml` in the root of the repository:
 ```yaml
 version: 1
 
-docs: "docs/reference/**/*.md"
+targets: "docs/reference/**/*.md"
 
 sources:
   - name: product

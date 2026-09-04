@@ -59,7 +59,7 @@ BUILTINS: dict[str, BuiltIn] = {
 
 TOP_LEVEL_KEYS = {
     "version",
-    "docs",
+    "targets",
     "exclude",
     "sources",
     "source_map",
@@ -82,7 +82,7 @@ TEST_KEYS = {
     "run",
     "results",
     "setup",
-    "docs",
+    "targets",
     "exclude",
     "sources",
     "source_map",
@@ -152,7 +152,7 @@ class Test:
     run: str | None = None
     results: str | None = None
     setup: list[str] = field(default_factory=list)
-    docs: list[str] = field(default_factory=list)
+    targets: list[str] = field(default_factory=list)
     exclude: list[str] = field(default_factory=list)
     sources: list[str] = field(default_factory=list)
     source_map: list[dict] = field(default_factory=list)
@@ -165,7 +165,7 @@ class Test:
             "name": self.name,
             "kind": self.kind,
             "uses": self.uses,
-            "docs": self.docs,
+            "targets": self.targets,
             "exclude": self.exclude,
             "sources": self.sources,
             "generated": self.generated,
@@ -197,7 +197,7 @@ class Reporting:
 @dataclass
 class Config:
     path: Path
-    docs: list[str]
+    targets: list[str]
     exclude: list[str]
     sources: list[Source]
     source_map: list[dict]
@@ -366,7 +366,7 @@ def _parse_generated(raw, where: str) -> dict | None:
     return {"paths": _as_list(raw.get("paths"), f"{where}.paths"), "mode": mode}
 
 
-def _parse_test(raw, index: int, config_docs: list[str], config_exclude: list[str],
+def _parse_test(raw, index: int, config_targets: list[str], config_exclude: list[str],
                 known_sources: set[str]) -> Test | None:
     where = f"tests[{index}]"
 
@@ -463,12 +463,12 @@ def _parse_test(raw, index: int, config_docs: list[str], config_exclude: list[st
                 f"did you mean `{close[0]}`?" if close else "add it to `sources:` first",
             )
 
-    docs = _as_list(raw.get("docs"), f"{where}.docs") or list(config_docs)
-    if kind == AGENTIC and not docs:
+    targets = _as_list(raw.get("targets"), f"{where}.targets") or list(config_targets)
+    if kind == AGENTIC and not targets:
         raise ConfigError(
             where,
             "no documentation is in scope for this test",
-            "set a top-level `docs:` glob, or `docs:` on this test",
+            "set a top-level `targets:` glob, or `targets:` on this test",
         )
 
     return Test(
@@ -478,7 +478,7 @@ def _parse_test(raw, index: int, config_docs: list[str], config_exclude: list[st
         run=run,
         results=results,
         setup=_as_list(raw.get("setup"), f"{where}.setup"),
-        docs=docs,
+        targets=targets,
         exclude=_as_list(raw.get("exclude"), f"{where}.exclude") or list(config_exclude),
         # An agentic test with no explicit list may use every configured source.
         sources=sources or ([s for s in known_sources] if kind == AGENTIC else []),
@@ -556,7 +556,7 @@ def parse(data: dict, path: Path) -> Config:
             )
         seen.add(source.name)
 
-    docs = _as_list(data.get("docs"), "docs")
+    targets = _as_list(data.get("targets"), "targets")
     exclude = _as_list(data.get("exclude"), "exclude")
     source_map = _parse_source_map(data.get("source_map"), "source_map", seen)
 
@@ -573,7 +573,7 @@ def parse(data: dict, path: Path) -> Config:
     tests: list[Test] = []
     names: set[str] = set()
     for index, raw in enumerate(raw_tests):
-        test = _parse_test(raw, index, docs, exclude, seen)
+        test = _parse_test(raw, index, targets, exclude, seen)
         if test is None:
             continue
         if test.name in names:
@@ -590,7 +590,7 @@ def parse(data: dict, path: Path) -> Config:
 
     return Config(
         path=path,
-        docs=docs,
+        targets=targets,
         exclude=exclude,
         sources=sources,
         source_map=source_map,

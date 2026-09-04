@@ -9,7 +9,7 @@ The smallest valid configuration:
 
 ```yaml
 version: 1
-docs: "docs/reference/**/*.md"
+targets: "docs/reference/**/*.md"
 sources:
   - name: product
     repo: my-org/my-product
@@ -22,7 +22,7 @@ tests:
 | Field | Required | Default | Description |
 | ----- | -------- | ------- | ----------- |
 | `version` | yes | — | Must be `1`. |
-| `docs` | yes | — | Glob, or list of globs, of the documentation to test. Individual tests may narrow it. |
+| `targets` | yes | — | Glob, or list of globs, of the documentation to test. Individual tests may narrow it. |
 | `exclude` | no | none | Globs to leave out of every test. |
 | `sources` | no | none | The product repositories documentation is checked against. |
 | `source_map` | no | none | Which source owns which documentation. |
@@ -108,7 +108,7 @@ tests:
   - reference-review          # shorthand for the entry below with all defaults
   - name: reference-completeness
     uses: reference-completeness
-    docs: "docs/reference/cli/**/*.md"
+    targets: "docs/reference/cli/**/*.md"
 ```
 
 | Built-in | Question it answers |
@@ -174,7 +174,7 @@ the pipeline in a script and call the script.
 | `run` | — | Your own command. Mutually exclusive with `uses`. |
 | `results` | none | Where `run` writes its findings. |
 | `setup` | none | Commands to prepare this test. |
-| `docs` | top-level `docs` | Narrow this test's scope. |
+| `targets` | top-level `targets` | Narrow this test's scope. |
 | `exclude` | top-level `exclude` | Narrow this test's scope. |
 | `sources` | all sources | Which sources this test may use. |
 | `source_map` | top-level | Test-specific ownership. |

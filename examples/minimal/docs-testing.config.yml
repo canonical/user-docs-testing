@@ -1,7 +1,7 @@
 version: 1
 
 # The documentation being tested.
-docs: "docs/reference/**/*.md"
+targets: "docs/reference/**/*.md"
 
 # The product it describes. In a real repository this is checked out by the
 # workflow into sources/<name>; here it is committed so the example runs offline.

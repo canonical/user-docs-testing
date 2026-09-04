@@ -13,11 +13,11 @@ version: 1
 # ---------------------------------------------------------------------------
 # WHAT IS UNDER TEST
 #
-# `docs` is the default scope for every test; a test can narrow it. `exclude`
+# `targets` is the default scope for every test; a test can narrow it. `exclude`
 # removes material that is in the tree but is not source-backed reference.
 # Both accept a single glob or a list. `**` works.
 # ---------------------------------------------------------------------------
-docs:
+targets:
   - "docs/reference/**/*.md"
 
 exclude:
@@ -153,7 +153,7 @@ reporting:
 # ---------------------------------------------------------------------------
 tests:
   # --- Shorthand ------------------------------------------------------------
-  # A bare string runs that built-in with every default: the top-level `docs`
+  # A bare string runs that built-in with every default: the top-level `targets`
   # and `exclude`, all sources, ownership from `source_map`.
   - reference-review
 
@@ -163,7 +163,7 @@ tests:
     uses: reference-completeness
 
     # Narrow the scope for this test only.
-    docs:
+    targets:
       - "docs/reference/config/**/*.md"
       - "docs/reference/lsctl.md"
     exclude:
@@ -206,7 +206,7 @@ tests:
   # not be enumerated, so it is reported as unverified.
   - name: server-api-surface
     uses: undocumented-surface
-    docs:
+    targets:
       - "docs/reference/api/**/*.md"
     with:
       manifest: sources/landscape-server/openapi.json
@@ -242,7 +242,7 @@ tests:
   # Turn a test off without deleting its configuration.
   - name: legacy-terminology
     uses: reference-review
-    docs:
+    targets:
       - "docs/reference/legacy/**/*.md"
     enabled: false
 
