@@ -1,0 +1,40 @@
+name: Self-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Behavioral contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install --quiet pyyaml
+
+      - name: Run the contract tests
+        run: python -m unittest discover -s selftests -v
+
+      # The examples and the annotated config are documentation. If they stop
+      # parsing, the documentation is wrong — the failure this project exists
+      # to catch.
+      - name: Validate the shipped configurations
+        run: |
+          cp docs-testing.config.example.yml /tmp/docs-testing.config.yml
+          python -m docs_testing validate --config /tmp/docs-testing.config.yml
+          for example in examples/*/; do
+            echo "--- $example"
+            ( cd "$example" && PYTHONPATH="$GITHUB_WORKSPACE" \
+                python -m docs_testing validate ) || exit 1
+          done

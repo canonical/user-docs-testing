@@ -106,7 +106,7 @@ A source directory under `sources/<name>/` may be missing or empty.
 Contribute your findings to the single check run produced by the workflow.
 
 Classify each in-scope area into exactly one coverage state (see
-[RESULTS-SCHEMA.md](../../RESULTS-SCHEMA.md)); for this test they mean:
+[the results schema](../../docs/reference/results.md)); for this test they mean:
 
 - **reviewed-and-supported** — the enumerated surface for the area is fully documented.
 - **reviewed-with-conflicting-evidence** — the source exposes user-facing elements

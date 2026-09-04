@@ -1,0 +1,24 @@
+version: 1
+
+# The documentation being tested.
+targets: "docs/reference/**/*.md"
+
+# The product it describes. In a real repository this is checked out by the
+# workflow into sources/<name>; here it is committed so the example runs offline.
+sources:
+  - name: product
+    repo: my-org/my-product
+
+tests:
+  # A review by an AI engine, fetched from upstream. Runs in CI.
+  - reference-review
+
+  # A deterministic check is always a command of your own. This one borrows the
+  # example script from the user-docs-testing repository to show the shape; a
+  # real project would point at its own checker.
+  - name: cli-surface
+    run: "python3 ../../tests/deterministic/undocumented_surface.py
+           --manifest sources/product/cli-surface.txt
+           --targets docs/reference/**/*.md
+           --output results/cli-surface.json"
+    results: "results/cli-surface.json"

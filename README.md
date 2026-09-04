@@ -1,178 +1,148 @@
-# user-docs-testing
+# Docs Testing
 
-> This project is a work-in-progress.
+Test documentation against the product it describes, and report the result as a
+GitHub Check Run.
 
-A tool for testing documentation. It reports its findings as a GitHub Check Run.
+Documentation goes stale silently. Nothing fails when a default changes, a flag
+is renamed, or an option ships undocumented — until a user follows the
+instructions and they do not work. This runs those checks in CI, the way you
+already run tests.
 
-## Tests
+> **Status: pre-release.** No version has been tagged yet; installations track
+> `main` but are pinned to a commit. See [versioning](docs/reference/versioning.md).
 
-Tests are declared in a `docs-testing.config.yml` in your repo. Two kinds:
+## What it checks
 
-- Agentic tests — a review by an AI engine, run through
-  [GitHub Agentic Workflows](https://github.github.com/gh-aw/) (gh-aw). Each points
-  at an instruction file describing what to check. The tool ships a set of these
-  under [tests/agentic/](tests/agentic/). Two ship for reference docs:
-  `reference-review`, the general accuracy check, and `reference-completeness`,
-  which finds interface that exists in the source but is not documented.
-- Deterministic tests — a command that emits findings in a standard JSON schema
-  (see [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md)). Two ship under
-  [tests/deterministic/](tests/deterministic/): `source_manifest.py` (records
-  which sources were actually checked out, and at which commit) and
-  `undocumented_surface.py` (the precise counterpart to `reference-completeness`
-  — diffs a machine-readable interface manifest, e.g. OpenAPI/`--help`/JSON
-  Schema, against the docs). Most deterministic checks are specific to a project,
-  so you'll usually add your own.
+| Review | Question it answers |
+| ------ | ------------------- |
+| `reference-review` | Does the documentation state something the product contradicts? |
+| `reference-completeness` | Does product surface exist that the documentation never mentions? |
 
-Choose which tests to run, and point them at your docs, in your config.
+These two reviews are what the tool ships, performed by an AI engine. Alongside
+them you can run **deterministic checks** — any command of your own, in any
+language — and their findings appear in the same report.
 
-## Sources and coverage
+Every finding must cite the product source that proves it. A review that cannot
+reach its source reports the affected documentation as **unverified** — never as
+passing.
 
-Products are often implemented across several repositories, so the authoritative
-source for a documented claim depends on which component owns the behavior. The
-config models this:
+## Install
 
-- Each entry under `sources:` names a repository a test compares docs against.
-  Mark it `required: true` (default) or `required: false`. A required source that
-  can't be read makes the reviews depending on it **incomplete** — those files are
-  reported as blocked, never as passing. An optional source can be absent, and the
-  areas that need it are reported as unsupported.
-- A top-level `source_map:` states **once** which source owns which documentation
-  paths, so each area is checked against the *producer* of an interface (other
-  sources only corroborate). Every reference test reads the same map; a test adds
-  its own `source_map` only when it genuinely needs different ownership.
-- Reviews are not reduced to one repo-wide pass/fail. Each area is classified with
-  the coverage vocabulary in [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md)
-  (reviewed-and-supported, reviewed-with-conflicting-evidence, skipped-by-policy,
-  unsupported-by-configured-sources, blocked-required-source-unavailable).
-
-## Three outcomes, never two
-
-The report distinguishes three things that must not collapse into one:
-
-| Outcome                                     | `status`     | Check Run  |
-| ------------------------------------------- | ------------ | ---------- |
-| We checked it and it appears correct        | `pass`       | `success`  |
-| We found a problem                          | `fail`       | `failure`  |
-| We could not establish whether it is correct | `incomplete` | `neutral`  |
-
-If a required source is unavailable, the material it owns is *not verified*, so
-the run is `incomplete` — it must never look like a clean pass. Set
-`reporting.on_incomplete_coverage: action_required` if you want that to block
-merges. Details in [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md).
-
-Private sources need care: never expose a private source token to an untrusted
-fork (see the SECURITY note in [workflows/docs-testing.md](workflows/docs-testing.md)).
-
-## Examples
-
-[examples/landscape/](examples/landscape/) is the proving ground: a worked,
-multi-repository configuration (public + private sources, ownership map, partial
-coverage) for a real product. Run it from
-[.github/workflows/landscape-reference-review.md](.github/workflows/landscape-reference-review.md).
-
-
-
-## Usage
-
-1. Copy [workflows/docs-testing.md](workflows/docs-testing.md) into your repo under
-   `.github/workflows/`.
-2. In its `imports:` block, list the shipped agentic tests you want. They're
-   fetched from this (public) repo when you compile, so your runs don't need
-   access to it.
-3. Add a `docs-testing.config.yml` (see
-   [docs-testing.config.example.yml](docs-testing.config.example.yml)) with each
-   test's targets, sources, and reporting.
-4. Compile it — see below — and commit the generated `.lock.yml`.
-
-## Compiling
-
-GitHub Actions cannot run Markdown. `gh aw compile` turns each
-`.github/workflows/*.md` into a `.lock.yml`, and **that** is what Actions
-executes. Commit the `.lock.yml` next to its `.md`; a workflow without one does
-not appear in the Actions tab at all.
-
-Install the [gh CLI](https://cli.github.com/) and the
+You need the [gh CLI](https://cli.github.com/) and the
 [gh-aw extension](https://github.com/githubnext/gh-aw):
 
 ```bash
-gh extension install githubnext/gh-aw   # once
-gh aw compile                           # in your repo, after any workflow change
-git add .github/workflows/*.lock.yml && git commit -m "chore: compile workflows"
+gh extension install githubnext/gh-aw
 ```
 
-Recompile whenever you change the workflow `.md`, your `imports:`, or want to
-pick up newer shipped tests. If a lock file drifts out of sync with its source,
-the workflow detects it at run time and reports a stale lock file, so you are
-told rather than silently running old instructions.
+Then, in your documentation repository:
 
-### Staying current
+```bash
+gh aw add canonical/user-docs-testing/docs-testing
+```
 
-`imports:` are pinned at compile time, which is what lets a run work without
-network access to this repo. What gets pinned depends on the ref you name:
+That adds `.github/workflows/docs-testing.md`, **compiles it for you**, and
+records where it came from so `gh aw update docs-testing` can pick up
+improvements later.
 
-| `imports:` ref | On recompile |
-| -------------- | ------------------------------------------- |
-| `@main`        | picks up the current tip of `main`          |
-| `@v1` (tag)    | stays on that tag until you change it       |
-| `@<sha>`       | frozen                                       |
+Not using Copilot? Choose the engine at install time:
 
-Most consumers should track a tag or `@main` and recompile periodically.
-`gh aw update` does this for you: it fetches the latest version of each
-workflow, merges it with your local edits, and recompiles.
+```bash
+gh aw add canonical/user-docs-testing/docs-testing --engine claude
+```
 
-Upstream reference: [gh-aw documentation](https://github.github.io/gh-aw/),
-[CLI commands](https://github.github.io/gh-aw/setup/cli/),
-[imports](https://github.github.io/gh-aw/reference/imports/).
+`copilot`, `claude`, `codex`, and `gemini` are all supported; each needs its own
+secret. See [engines and tokens](docs/reference/engines.md).
 
-## Engines and tokens
+## Configure
 
-Two independent tokens can be involved in a run. They solve different problems
-and are configured separately:
+Create `docs-testing.config.yml` in the root of the repository:
 
-- **Engine token** — how the AI agent (the engine that runs agentic tests)
-  authenticates. Depends on the `engine:` you set in
-  [workflows/docs-testing.md](workflows/docs-testing.md).
-- **Source token** — how `actions/checkout` reads a *private* source-of-truth
-  repo declared in your `docs-testing.config.yml`. Only needed for private
-  sources; public sources need none. See "Private sources" below.
+```yaml
+version: 1
 
-### Choosing an engine
+targets: "docs/reference/**/*.md"
 
-The workflow ships with `engine: copilot`, but the engine is not fixed. Set
-`engine:` in the workflow frontmatter to any provider gh-aw supports, then store
-the matching secret in your repository (or organization):
+sources:
+  - name: product
+    repo: my-org/my-product
 
-| Engine                    | `engine:`  | Secret                                                                             |
-| ------------------------- | ---------- | ---------------------------------------------------------------------------------- |
-| GitHub Copilot (default)  | `copilot`  | `COPILOT_GITHUB_TOKEN` — a **fine-grained** PAT with **Copilot Requests: Read-only** (classic `ghp_...` tokens are rejected) |
-| Claude (Anthropic)        | `claude`   | `ANTHROPIC_API_KEY`                                                                |
-| OpenAI Codex              | `codex`    | `OPENAI_API_KEY`                                                                   |
-| Google Gemini             | `gemini`   | `GEMINI_API_KEY`                                                                   |
+tests:
+  - reference-review
+```
 
-OpenAI-compatible providers such as OpenRouter also work — either via
-`engine: codex` with `OPENAI_BASE_URL` set to the provider endpoint, or via
-Copilot BYOK with `COPILOT_PROVIDER_BASE_URL`. The provider hostname must be
-added to `network.allowed`. See the
-[gh-aw engines reference](https://github.github.com/gh-aw/reference/engines/) for
-details.
+Then tell the workflow to check that product out. In
+`.github/workflows/docs-testing.md`, under `checkout:`:
 
-### Switching engines
+```yaml
+  - repository: my-org/my-product
+    ref: main
+    path: sources/product
+```
 
-1. Change the `engine:` line in [workflows/docs-testing.md](workflows/docs-testing.md).
-2. Run `gh aw compile`.
-3. Commit the regenerated `.lock.yml` (it must stay in sync with the source).
-4. Add the corresponding secret from the table above.
+The `path` must be `sources/<name>`, matching the source's `name`. Recompile and
+commit:
 
-### Private sources
+```bash
+gh aw compile
+git add .github/workflows/ docs-testing.config.yml && git commit
+```
 
-A source-of-truth repo is checked out separately from the engine, and a private
-one needs its own read token — *not* the engine token. In
-`docs-testing.config.yml`, a source declares `auth: secret:NAME`, and the
-matching `checkout` block in the workflow supplies `token: ${{ secrets.NAME }}`.
+GitHub Actions cannot run Markdown, so `gh aw compile` generates the `.lock.yml`
+that Actions actually executes. It has to be committed next to its `.md`.
 
-Because a fine-grained PAT has a single resource owner, a personal
-`COPILOT_GITHUB_TOKEN` cannot also read a private repo in another org. A private
-org source therefore needs a *second*, org-owned secret with **Contents: Read**,
-separate from the engine token. You must have access to the private repo, and the
-org must permit fine-grained PATs (which may require admin approval / SSO
-authorization).
+## Reading the result
+
+Five outcomes, and they never collapse into each other:
+
+| Result | Meaning | Check Run |
+| ------ | ------- | --------- |
+| **Pass** | Verified; nothing to fix. | `success` |
+| **Warnings** | Verified; non-blocking findings reported. | `neutral` |
+| **Incomplete** | Part of the scope could not be verified. | `neutral`, or `action_required` |
+| **Fail** | An actionable documentation problem was found. | `failure` |
+| **Tool error** | The tool itself failed; the results mean nothing. | `action_required` |
+
+The last two rows are the point of the design. A crashed check, an unreadable
+results file, or a private source that failed to clone must never come back as
+"your documentation passed". Full detail in
+[the results reference](docs/reference/results.md).
+
+Your configuration is checked first, before any test runs, so a typo fails in
+seconds with a message naming the field and the fix rather than surfacing later
+as a confusing review.
+
+## Examples
+
+- [examples/minimal](examples/minimal/) — the common case. Start here.
+- [examples/landscape](examples/landscape/) — a real product implemented across
+  six repositories, some private, with source ownership and partial coverage.
+- [docs-testing.config.example.yml](docs-testing.config.example.yml) — every
+  supported field, annotated, with real values.
+
+## Optional: run the checks locally
+
+Nothing below is required. CI runs all of this for you. It exists for a faster
+loop while you are writing your configuration.
+
+```bash
+pipx install git+https://github.com/canonical/user-docs-testing
+
+docs-testing validate   # is my configuration correct?
+docs-testing run        # run the checks that need no AI engine
+docs-testing list       # what checks are available?
+```
+
+## Going further
+
+- [Configuration reference](docs/reference/configuration.md) — every field,
+  including source ownership, generated documentation, and custom checks.
+- [Results reference](docs/reference/results.md) — outcomes, coverage, and the
+  schema for writing your own check.
+- [Scheduling](docs/reference/scheduling.md) — cadence, manual runs, and running
+  different scopes at different frequencies.
+- [Engines, tokens, and private sources](docs/reference/engines.md) — which
+  credential does what, and how to keep a private source safe.
+- [How it works](docs/reference/how-it-works.md) — the lock file, what compiles
+  when, and what happens during a run.
+- [Versioning](docs/reference/versioning.md) — what is stable and what is not.

@@ -92,7 +92,7 @@ and `message`).
 Contribute to the single check run the workflow produces.
 
 Classify every in-scope file (or claim category) into exactly one coverage state
-from [RESULTS-SCHEMA.md](../../RESULTS-SCHEMA.md): `reviewed-and-supported`,
+from [the results schema](../../docs/reference/results.md): `reviewed-and-supported`,
 `reviewed-with-conflicting-evidence`, `skipped-by-policy`,
 `unsupported-by-configured-sources`, `blocked-required-source-unavailable`.
 

@@ -1,114 +1,94 @@
 ---
-# Documentation testing workflow (GitHub Agentic Workflow source).
+# Documentation testing.
 #
-# Generic template. Consumers install it into their repository, then drive it
-# from their own `docs-testing.config.yml`. It contains no project-specific logic.
+# Install:   gh aw add canonical/user-docs-testing/docs-testing
+# Update:    gh aw update docs-testing
 #
-# Setup for a consuming repository:
-#   1. Copy this file to `.github/workflows/docs-testing.md` in your repo.
-#   2. Under `imports:`, list the shipped agentic tests you want to run.
-#   3. Add a `docs-testing.config.yml` (see docs-testing.config.example.yml) with
-#      each test's targets, sources, and reporting.
-#   4. Fill in the source-of-truth checkouts and any secrets your tests need.
-#   5. Compile:  gh aw compile
-#      Commit the generated docs-testing.lock.yml next to this file.
-description: "Run documentation tests declared in docs-testing.config.yml."
+# Everything about *what* gets tested lives in `docs-testing.config.yml`, not
+# here. The only part of this file most repositories need to touch is the
+# `checkout:` block, which must list one entry per source of truth in that
+# config. `docs-testing validate` cross-checks the two for you.
+description: "Test documentation against the product it describes."
 emoji: "🔎"
 labels: ["docs-testing", "automation"]
 
-# Shipped agentic tests. Each is a markdown instruction file fetched from the
-# (public) tool repo at COMPILE time, pinned to a ref, and baked into the
-# generated lock file — so the workflow needs no runtime access to the tool repo.
-# Add one line per agentic test you want; remove the ones you don't. Available:
-#   reference-review        general accuracy/drift review (default; start here)
-#   reference-completeness  interface in source but undocumented
+# The shipped reference tests, each a self-contained instruction file. Both are
+# imported, but only the tests listed in your `docs-testing.config.yml` actually
+# run — so there is normally no reason to edit this block.
+#
+# No release has been tagged yet, so these track `main`. Pin them to a tag once
+# one exists; see docs/reference/versioning.md.
 imports:
-  - canonical/user-docs-testing/tests/agentic/reference-review.md@v1
-  # - canonical/user-docs-testing/tests/agentic/reference-completeness.md@v1
+  - canonical/user-docs-testing/tests/agentic/reference-review.md@main
+  - canonical/user-docs-testing/tests/agentic/reference-completeness.md@main
 
 on:
-  # Manual trigger.
   workflow_dispatch:
-  # Scheduled run — adjust or remove as needed.
+  # Scattered by gh-aw to a stable per-repository time, so many repositories
+  # running this do not all start at once. `weekly on monday`, `daily`, and
+  # `weekly on friday at 09:00` all work; monthly needs raw cron (`0 6 1 * *`).
+  # Several entries are allowed. To run different scopes on different cadences,
+  # install this workflow twice with separate configs — see docs/reference/scheduling.md.
   schedule:
-    - cron: "0 6 * * 1"
+    - cron: "weekly on monday"
   # SECURITY — private sources and untrusted pull requests:
   # Do NOT add a `pull_request` trigger from FORKS while any private source is
   # configured. A fork PR can alter this workflow or docs-testing.config.yml and,
   # if a privileged source token were exposed to it, use that token to read
   # private repositories. Keep private-source runs on trusted events only
   # (workflow_dispatch, schedule, or pushes to protected branches). If you need
-  # PR-time coverage, restrict it to same-repository PRs and gate any
-  # private-source checkout behind an appropriate trusted event.
+  # PR-time coverage, restrict it to same-repository pull requests.
 
 # The agent runs READ-ONLY. All writes happen in the gated safe-outputs job, so
 # secrets never enter the agent runtime.
 permissions:
   contents: read
+  # Lets the Copilot engine authenticate with the workflow's own token, so no
+  # personal access token is needed. This requires centralized Copilot billing;
+  # if your organization does not have it, remove this line and set a
+  # COPILOT_GITHUB_TOKEN secret instead. See docs/reference/engines.md.
+  copilot-requests: write
 
-# AI engine that runs the agentic tests. Not fixed to Copilot — set this to any
-# provider gh-aw supports and store the matching secret in your repo/org:
-#   copilot -> COPILOT_GITHUB_TOKEN (fine-grained PAT, Copilot Requests: Read-only)
-#   claude  -> ANTHROPIC_API_KEY
-#   codex   -> OPENAI_API_KEY
-#   gemini  -> GEMINI_API_KEY
-# OpenAI-compatible providers (e.g. OpenRouter) work via codex + OPENAI_BASE_URL
-# or Copilot BYOK + COPILOT_PROVIDER_BASE_URL; add the provider host to
-# network.allowed. After changing this, run `gh aw compile` and commit the
-# regenerated .lock.yml. This engine token is SEPARATE from any source token
-# below. See https://github.github.com/gh-aw/reference/engines/ and README.md.
+# The AI engine that performs the reviews. Pick it at install time instead of
+# editing here:  gh aw add canonical/user-docs-testing/docs-testing --engine claude
+# Supported: copilot | claude | codex | gemini. Each needs its own secret, except
+# copilot with the permission above. If you change this line by hand, run
+# `gh aw compile` afterwards. See docs/reference/engines.md.
 engine: copilot
 
-# Check out the repositories the run needs.
 checkout:
-  # Your repository: documentation and docs-testing.config.yml (primary target).
+  # Your documentation and docs-testing.config.yml.
   - current: true
 
-  # Your source-of-truth repo(s). One block per source in your config. A private
-  # source needs its OWN read token (Contents: Read) — this is separate from the
-  # engine token above, and a personal fine-grained PAT cannot span orgs. Use a
-  # secret for private repos; omit `token` for public ones. Example:
+  # One block per `sources:` entry in docs-testing.config.yml. The `path` must be
+  # `sources/<name>`, matching that source's `name`. A PRIVATE source needs its
+  # own read token (Contents: Read), separate from the engine's authentication
+  # above; omit `token` for public repositories.
   #
   # - repository: my-org/my-product
   #   ref: main
   #   path: sources/product
+  #
+  # - repository: my-org/my-private-product
+  #   ref: main
+  #   path: sources/private-product
   #   token: ${{ secrets.SOURCE_REPO_TOKEN }}
   #
-  # Match each block to a `sources:` entry in docs-testing.config.yml. If a
-  # source is REQUIRED there and its checkout fails, the runs that depend on it
-  # are incomplete — the agent reports those files as blocked, never as passing,
-  # and the check run concludes with `reporting.on_incomplete_coverage` rather
-  # than `success`. Never expose a private source token to an untrusted fork
-  # (see the SECURITY note under `on:`).
+  # A REQUIRED source that is missing here makes the reviews depending on it
+  # incomplete — they are never reported as passing. Never expose a private
+  # source token to an untrusted fork (see the SECURITY note under `on:`).
 
-  # Only if you run a *shipped* deterministic test: check out the (public) tool
-  # repo to get run_tests.py and the shipped check scripts. Not needed for
-  # agentic-only setups, or when your deterministic scripts live in your repo.
-  #
-  # - repository: canonical/user-docs-testing
-  #   ref: main
-  #   path: .docs-testing-tool
+# Validates the configuration, records which sources were really checked out, and
+# runs the deterministic checks, writing results/all.json for the agent to read.
+# A configuration error fails here, in seconds, instead of confusing the agent.
+steps:
+  - name: Run documentation checks
+    uses: canonical/user-docs-testing/actions/docs-tests@main
+    # Defaults shown; set `config` to run a different scope on this schedule.
+    # with:
+    #   config: docs-testing.config.yml
+    #   sources-root: sources
 
-# Deterministic layer (OPTIONAL). Uncomment if your config declares deterministic
-# tests. It runs the orchestrator before the agent, writing combined findings to
-# results/all.json so the agent can de-duplicate against them.
-# steps:
-#   - name: Set up Python
-#     uses: actions/setup-python@v5
-#     with:
-#       python-version: "3.12"
-#   - name: Install orchestrator deps
-#     run: pip install pyyaml
-#   - name: Run deterministic tests
-#     run: python .user-docs-testing/run_tests.py --config docs-testing.config.yml --output results/all.json
-#   - name: Upload deterministic results
-#     uses: actions/upload-artifact@v4
-#     with:
-#       name: deterministic-results
-#       path: results/all.json
-#       if-no-files-found: warn
-
-# Report findings as a CI-gating Check Run (the default reporting mode).
 safe-outputs:
   create-check-run:
     name: "Documentation testing"
@@ -117,48 +97,40 @@ safe-outputs:
 
 # Documentation testing
 
-Run the documentation tests configured for this repository. The instructions for
-each shipped agentic test are included above (via imports) — follow those
-criteria, and do not impose criteria of your own.
+Run the documentation tests configured for this repository and report them as a
+single check run.
 
-Follow these steps:
+1. **Read `results/all.json`.** It is the plan and the deterministic results:
+   which tests to run (`plan.agentic_tests`), which source owns which
+   documentation (`plan.source_map`), how to conclude (`plan.reporting`), what
+   was really checked out (`source_evidence`), what the deterministic checks
+   already found (`findings`, `coverage`), and whether anything went wrong
+   (`errors`).
 
-1. **Read the config.** Load `docs-testing.config.yml`. Note the top-level
-   `sources` (with each one's `required` flag), the shared `source_map` that says
-   which source owns which documentation, and the `reporting` settings. For each
-   test with `type: agentic`, note its `name`, `targets`/`exclude`, `sources`,
-   `generated` policy, and any test-level `source_map`. Sources of truth are
-   checked out under `sources/`.
+   If the file is missing or unreadable, the deterministic stage did not
+   complete. Report `action_required` saying so, and review nothing — without it
+   you cannot tell which sources were actually available.
 
-2. **Read the deterministic results, if any.** If `results/all.json` exists, it
-   holds findings from deterministic tests that ran before you, plus their
-   `coverage` entries. Use it both to report and to avoid duplicating work.
+2. **Run each test in `plan.agentic_tests`.** For each one, apply the imported
+   instructions whose title names that test, over its `targets` minus `exclude`.
+   Follow those criteria and do not impose criteria of your own. Run every
+   listed test, and only those.
 
-3. **Run each agentic test.** For every configured agentic test, apply the
-   matching instructions from above to the files in its `targets` (minus
-   `exclude`), using its `sources` where relevant.
-   - Honour the test's `generated` policy (`skip`, `annotate`, or
-     `deterministic-only`) if present.
-   - If `skip_deterministically_covered` is true, do not re-report anything whose
-     topic already appears as a `covered_topic` in `results/all.json`.
+3. **Report once.** Emit exactly one `create_check_run` covering the
+   deterministic and agentic results together.
 
-4. **Report once.** Emit a single `create_check_run` combining the deterministic
-   and agentic results. Pick the conclusion in this order — the three outcomes
-   must stay distinct:
-   - `failure` — there are findings and `reporting.fail_on_findings` is true.
-     ("We found a problem.")
-   - `reporting.on_incomplete_coverage` (default `neutral`) — no findings, but at
-     least one area is `blocked-required-source-unavailable` or
-     `unsupported-by-configured-sources`, in either `results/all.json` coverage
-     or an agentic test's classification. ("We could not establish whether it is
-     correct.") Never report `success` in this case.
-   - `neutral` — there are findings but `fail_on_findings` is false.
-   - `success` — every in-scope area was reviewed and nothing was found.
-     ("We checked it and it appears correct.")
-   - The summary must group findings by test and by documentation file, each with
-     a one-line description and any supporting evidence, and must list blocked or
-     unsupported areas separately so a reader can see what was NOT verified.
+   Choose the conclusion in this order, stopping at the first that applies:
+   - `action_required` — `errors` in `results/all.json` is not empty. A check
+     failed to run, so the results are not trustworthy. Say so plainly; do not
+     describe the documentation as passing or failing.
+   - `failure` — a finding of severity `error`, and `fail_on_findings` is true.
+   - `plan.reporting.on_incomplete_coverage` (default `neutral`) — no blocking
+     finding, but an area is blocked or unsupported. Never `success` here.
+   - `neutral` — only `warning`-severity findings.
+   - `success` — everything in scope reviewed or skipped, with no findings.
 
-If nothing needs action, you MUST still emit a `create_check_run`, using the
-conclusion chosen by the rules above.
+   Group findings by test and by documentation file, and list blocked or
+   unsupported areas separately so a reader can see what was NOT verified.
+
+You must emit a `create_check_run` even when there is nothing to fix.
 

@@ -1,55 +1,49 @@
 # Landscape example
 
-A worked, multi-repository configuration for reviewing the **Landscape reference
-documentation** with this tool. It exists to demonstrate the tool's
-source-ownership, required/optional, and partial-coverage features against a real
-product whose sources span several repositories — some of them **private**. It is
-**not** used by this repository's own CI.
+A worked configuration for a product implemented across six repositories, four of
+them private. It exists to show source ownership, required versus optional
+sources, and honest partial coverage against something real. It is **not** used
+by this repository's own CI.
 
-## Layout (and the convention for new examples)
+If you are starting out, read [examples/minimal](../minimal/) first — this one is
+deliberately the complicated end of the spectrum.
+
+## What makes it a useful example
+
+The authoritative source for a Landscape claim depends on which component
+implements it. The `config/` pages document the *server's* `service.conf`, not
+the client's, so they are checked against the private server repository. Charm
+options belong to the operator repository. Nothing owns the packaging and PPA
+page at all.
+
+The configuration states that ownership once, and every review uses it.
+
+## Layout
 
 ```
-examples/
-  landscape/
-    docs-testing.config.yml   # the example config          (committed)
-    README.md                 # this file                    (committed)
-    fetch-fixtures.sh         # pulls docs + sources locally (committed)
-    docs/      (gitignored)   # reference docs under review  (fetched)
-    sources/   (gitignored)   # source-of-truth checkouts    (fetched)
-    results/   (gitignored)   # deterministic output         (generated)
+docs-testing.config.yml   the example config          (committed)
+fetch-fixtures.sh         pulls docs + sources        (committed)
+docs/      (gitignored)   reference docs under review (fetched)
+sources/   (gitignored)   source-of-truth checkouts   (fetched)
+results/   (gitignored)   check output                (generated)
 ```
-
-To add another example, create `examples/<your-example>/` with the same shape:
-commit the config (and any helper), and keep fetched docs/sources gitignored.
 
 ## Try it locally
 
-The agentic test in [`tests/agentic/reference-review.md`](../../tests/agentic/reference-review.md)
-is an instruction file for an AI engine (run via gh-aw in CI). To preview it
-without CI, fetch the fixtures and have an engine execute those instructions
-against this folder's `docs/` and `sources/`.
-
 ```bash
 ./fetch-fixtures.sh          # populates docs/ and sources/landscape-client
-# optionally clone the private sources it prints, if you have access
+docs-testing validate
+docs-testing run
 ```
 
-- **Public only:** with just `landscape-client`, most of the Landscape reference
-  set (which is server-owned) is reported as `blocked-required-source-unavailable`
-  — a faithful demonstration that the review does not pass or fabricate findings
-  for material it cannot verify.
-- **With private access:** clone `landscape-server` (and optionally
-  `landscape-server-operator`, `landscape-ui`) into `sources/` to unlock
-  server-side coverage and real drift detection.
+With only the public `landscape-client` source, most of the reference set is
+reported as `blocked-required-source-unavailable` and the run is **incomplete**.
+That is the example working correctly: it refuses to pass documentation it could
+not verify, and it does not invent findings to explain the gap.
 
-The deterministic source-availability check can be run directly. It reports which
-sources were actually checked out, and at which commit:
+Clone `landscape-server` (and optionally `landscape-server-operator`,
+`landscape-ui`) into `sources/` if you have access, and the blocked areas become
+reviewable.
 
-```bash
-python3 ../../tests/deterministic/source_manifest.py \
-  --config docs-testing.config.yml --sources-root sources \
-  --output results/source-availability.json
-```
-
-See the comments in [`docs-testing.config.yml`](docs-testing.config.yml) for the
-full repository inventory, source-ownership map, and coverage expectations.
+`reference-review` itself is performed by an AI engine and needs the installed
+workflow; see the [README](../../README.md).
