@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   contracts:
-    name: Behavioural contracts
+    name: Behavioral contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

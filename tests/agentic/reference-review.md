@@ -1,7 +1,7 @@
 # Test: reference-review
 
 **The question this test answers:** does the documentation state something that
-the product owning that behaviour contradicts?
+the product owning that behavior contradicts?
 
 This is the general reference test. If you run only one, run this one. Its
 companion, `reference-completeness`, covers the opposite direction — interface
@@ -13,11 +13,11 @@ specific to this test.
 
 ## Procedure
 
-For each in-scope file (from the test's `docs` minus `exclude`, honouring
+For each in-scope file (from the test's `docs` minus `exclude`, honoring
 `generated.mode`), work claim by claim:
 
 1. **State the claim.** Identify a specific, checkable assertion — a default, a
-   flag, a path, an endpoint, a name, a limit, a described behaviour. Skip prose
+   flag, a path, an endpoint, a name, a limit, a described behavior. Skip prose
    that asserts nothing checkable.
 2. **Find the owner** of that claim, per the shared rules.
 3. **Read the owning source.** Search `sources/<owner>/` for the implementation

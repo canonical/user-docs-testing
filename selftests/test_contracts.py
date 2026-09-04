@@ -1,4 +1,4 @@
-"""Behavioural contracts of the documentation testing product.
+"""Behavioral contracts of the documentation testing product.
 
 These test what a user can observe: the outcome of a run, the exit status, and
 whether a broken tool can ever look like verified documentation. They are
@@ -555,7 +555,7 @@ class CommandLine(unittest.TestCase):
             check=False,
         )
 
-    def test_minimal_example_matches_its_documented_behaviour(self):
+    def test_minimal_example_matches_its_documented_behavior(self):
         example = REPO_ROOT / "examples" / "minimal"
         result = self._run(["run", "--output", "/tmp/docs-testing-selftest.json"], example)
         self.assertEqual(result.returncode, EXIT_OK, result.stderr)

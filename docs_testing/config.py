@@ -39,7 +39,7 @@ BUILTINS: dict[str, BuiltIn] = {
     "reference-review": BuiltIn(
         id="reference-review",
         kind=AGENTIC,
-        summary="Does the documentation contradict the product that owns the behaviour?",
+        summary="Does the documentation contradict the product that owns the behavior?",
     ),
     "reference-completeness": BuiltIn(
         id="reference-completeness",

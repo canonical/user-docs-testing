@@ -34,7 +34,7 @@ Globs support `**`. Paths are relative to the repository root.
 ## `sources`
 
 A source is a repository holding the authoritative definition of some documented
-behaviour. Findings must cite one, so a review with no sources cannot prove
+behavior. Findings must cite one, so a review with no sources cannot prove
 anything.
 
 ```yaml

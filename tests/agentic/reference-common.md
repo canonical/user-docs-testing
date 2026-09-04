@@ -51,7 +51,7 @@ These do **not** settle a claim on their own:
 - absence of an item from a repository that does not own it;
 - a UI, client, or other consumer, when the producing source is available — a
   form field does not prove a backend default, a client constant does not prove
-  server behaviour;
+  server behavior;
 - a test fixture, when the production schema or parser says otherwise;
 - a documentation example, which is not an implementation.
 
@@ -127,7 +127,7 @@ Choose the conclusion in this order, and stop at the first that applies:
 
 ## Writing the report
 
-Optimise for someone scanning it in a pull request. Use this order, and omit any
+Optimize for someone scanning it in a pull request. Use this order, and omit any
 section that is empty:
 
 1. **Outcome** — one line: what happened, and whether action is needed.
@@ -145,11 +145,11 @@ Each finding must give a technical writer everything needed to act:
 
 - **Where** — documentation file and line.
 - **What it says** — the documented claim, quoted or tightly paraphrased.
-- **What the source says** — the conflicting authoritative behaviour or value.
+- **What the source says** — the conflicting authoritative behavior or value.
 - **Proof** — `sources/<name>/<path>`, plus a symbol or line where useful.
 - **Why it matters** — one line.
 
-Report output is sanitised before publication, and any URL that is not HTTPS is
+Report output is sanitized before publication, and any URL that is not HTTPS is
 removed. A finding about a non-HTTPS URL would therefore lose the evidence it
 depends on: describe such a value in words — scheme, host, and path — instead of
 pasting it.
