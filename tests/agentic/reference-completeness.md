@@ -115,15 +115,9 @@ Classify each in-scope area into exactly one coverage state (see
 - **unsupported-by-configured-sources** — no configured source can enumerate it.
 - **blocked-required-source-unavailable** — a required owning source was unavailable.
 
-Then report:
+Then report. The workflow, not this test, chooses the check run conclusion; your
+job is to classify coverage and to give every finding a `severity`.
 
-- `failure` if you found at least one undocumented element and
-  `reporting.fail_on_findings` is true.
-- Otherwise `reporting.on_incomplete_coverage` (default `neutral`) if any area is
-  blocked or unsupported — never `success` for an area whose surface you could
-  not enumerate.
-- `success` only if every in-scope area is reviewed-and-supported or
-  skipped-by-policy.
 - For each finding include: the undocumented source element (name plus
   `sources/<name>/<path>` or symbol), the area it belongs to, and a one-line note.
 - Use `severity: warning` for undocumented surface — it is a coverage gap, not a

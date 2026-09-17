@@ -96,14 +96,20 @@ from [the results schema](../../docs/reference/results.md): `reviewed-and-suppor
 `reviewed-with-conflicting-evidence`, `skipped-by-policy`,
 `unsupported-by-configured-sources`, `blocked-required-source-unavailable`.
 
-Choose the conclusion in this order:
+Give every finding a `severity`. The workflow, not this test, chooses the check
+run conclusion; severity is how your findings are weighed when it does.
 
-1. `failure` — at least one finding, and `reporting.fail_on_findings` is true.
-2. `reporting.on_incomplete_coverage` (default `neutral`) — no findings, but at
-   least one area is blocked or unsupported. Never `success` here: nothing was
-   proven wrong, but the review is not complete.
-3. `success` — every in-scope area is `reviewed-and-supported` or
-   `skipped-by-policy`, with no findings.
+- `error` — a reader who follows the documentation gets a wrong result: a wrong
+  default, limit or value they would act on; a flag, field or endpoint that no
+  longer exists or has been renamed; syntax that would fail.
+- `warning` — the claim misleads without breaking anything: a stale or imprecise
+  description, a missing caveat, a cosmetic difference, or a value that differs
+  only in a way a reader would not act on.
+
+Judge the consequence to someone following the text literally, not how wrong the
+text is. When a finding sits between the two, choose `warning`. A blocked build
+over a cosmetic difference teaches a team to switch the check off, which costs
+far more than the finding was worth.
 
 Each finding must give a technical writer everything needed to act:
 

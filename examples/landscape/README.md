@@ -1,6 +1,6 @@
 # Landscape example
 
-A worked configuration for a product implemented across six repositories, four of
+A worked configuration for a product implemented across four repositories, one of
 them private. It exists to show source ownership, required versus optional
 sources, and honest partial coverage against something real. It is **not** used
 by this repository's own CI.
@@ -41,8 +41,9 @@ reported as `blocked-required-source-unavailable` and the run is **incomplete**.
 That is the example working correctly: it refuses to pass documentation it could
 not verify, and it does not invent findings to explain the gap.
 
-Clone `landscape-server` (and optionally `landscape-server-operator`,
-`landscape-ui`) into `sources/` if you have access, and the blocked areas become
+Clone `landscape-server` into `sources/` if you have access — it is the one
+private repository here, and the only one needing a token. The public
+`landscape-server-operator` and `landscape-ui` need none. The blocked areas become
 reviewable.
 
 `reference-review` itself is performed by an AI engine and needs the installed

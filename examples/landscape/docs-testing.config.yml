@@ -1,5 +1,5 @@
 # Landscape — a worked configuration for a product implemented across several
-# repositories, most of them private.
+# repositories, one of them private.
 #
 # This is the complicated end of the spectrum. Start from examples/minimal if you
 # just want to see the common case. See README.md in this folder for what it
@@ -40,19 +40,17 @@ sources:
     auth: secret:SOURCE_REPO_TOKEN
     required: true
 
-  # Private, optional. Authoritative for server charm options and relations only.
+  # Public, optional. Authoritative for server charm options and relations only.
   - name: landscape-server-operator
     repo: canonical/landscape-server-operator
     ref: main
-    auth: secret:SOURCE_REPO_TOKEN
     required: false
 
-  # Private, optional. Authoritative for current web-portal terminology and field
+  # Public, optional. Authoritative for current web-portal terminology and field
   # labels; the server still owns the semantics behind them.
   - name: landscape-ui
     repo: canonical/landscape-ui
     ref: main
-    auth: secret:SOURCE_REPO_TOKEN
     required: false
 
 # ---------------------------------------------------------------------------
