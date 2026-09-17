@@ -127,13 +127,21 @@ you actually consulted to reach that conclusion. "Reviewed" with nothing cited i
 indistinguishable from not having looked, so report such an area as blocked
 instead.
 
-Group findings by file. List blocked and unsupported areas **separately and
-explicitly**, so a reader can see exactly which material was not verified.
+Group findings by file, as a list. Do not format findings as a table: a single
+redacted value breaks the row separators and takes the whole table with it,
+where a list loses only its own line. List blocked and unsupported areas
+**separately and explicitly**, so a reader can see exactly which material was not
+verified.
 
-Report output is sanitised before publication, and any URL that is not HTTPS is
-removed. A finding about a non-HTTPS URL therefore loses the evidence it depends
-on. Describe such a value instead of pasting it — name the scheme, host and path
-in words — so the finding survives intact.
+Report output is sanitised before publication: any URL that is not HTTPS, or
+whose domain is not allowlisted, is replaced with `(redacted)`. That destroys the
+evidence a URL-valued finding rests on, and a half-removed URL inside backticks
+leaves the report malformed.
+
+So **never paste a URL as evidence**. Describe it — name the scheme, host and
+path in words, as in "plain HTTP on example.com, path /ping" — and leave it out
+of backticks. This applies to the documented value and the source value alike,
+whenever either is a URL. A described value survives; a pasted one may not.
 
 ### Private sources
 

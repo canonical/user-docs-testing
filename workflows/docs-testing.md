@@ -132,5 +132,11 @@ single check run.
    Group findings by test and by documentation file, and list blocked or
    unsupported areas separately so a reader can see what was NOT verified.
 
+   Write findings as a list, never as a table. Output is sanitised before
+   publication: any URL that is not HTTPS, or whose domain is not allowlisted,
+   becomes `(redacted)`. In a table that breaks the row and the whole table
+   with it; in a list it costs one line. For the same reason, never paste a URL
+   as evidence — describe its scheme, host and path in words, outside backticks.
+
 You must emit a `create_check_run` even when there is nothing to fix.
 

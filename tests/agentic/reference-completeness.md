@@ -125,6 +125,10 @@ job is to classify coverage and to give every finding a `severity`.
   blocks a documented workflow.
 - Group findings by area, and briefly note the surface you enumerated so a reader
   can gauge how much was checked. List blocked / unsupported areas separately.
+- Write findings as a list, never as a table, and never paste a URL as evidence.
+  Output is sanitised before publication, and a redacted value breaks a table row
+  outright where it costs a list one line. Describe a URL's scheme, host and path
+  in words, outside backticks.
 
 ### Handling private sources safely
 
