@@ -90,7 +90,7 @@ A review must not report an area as verified against a source whose evidence say
 
 ```json
 {
-  "tool": "user-docs-testing",
+  "tool": "docs-testing",
   "schema_version": 2,
   "summary": {
     "status": "warn",

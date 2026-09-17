@@ -1,7 +1,7 @@
 ---
-# Documentation testing.
+# Docs Testing.
 #
-# Install:   gh aw add canonical/user-docs-testing/docs-testing
+# Install:   gh aw add canonical/user-docs-testing/workflows/docs-testing.md
 # Update:    gh aw update docs-testing
 #
 # Everything about *what* gets tested lives in `docs-testing.config.yml`, not
@@ -50,7 +50,7 @@ permissions:
   copilot-requests: write
 
 # The AI engine that performs the reviews. Pick it at install time instead of
-# editing here:  gh aw add canonical/user-docs-testing/docs-testing --engine claude
+# editing here:  gh aw add canonical/user-docs-testing/workflows/docs-testing.md --engine claude
 # Supported: copilot | claude | codex | gemini. Each needs its own secret, except
 # copilot with the permission above. If you change this line by hand, run
 # `gh aw compile` afterwards. See docs/reference/engines.md.
@@ -91,11 +91,11 @@ steps:
 
 safe-outputs:
   create-check-run:
-    name: "Documentation testing"
+    name: "Docs Testing"
     max: 1
 ---
 
-# Documentation testing
+# Docs Testing
 
 Run the documentation tests configured for this repository and report them as a
 single check run.

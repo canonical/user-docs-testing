@@ -182,7 +182,7 @@ what is useful, and write the checks your project actually needs.
 reporting:
   fail_on_findings: true
   on_incomplete_coverage: neutral
-  title: "Documentation testing"
+  title: "Docs Testing"
 ```
 
 | Field | Default | Description |
@@ -190,5 +190,5 @@ reporting:
 | `mode` | `check-run` | `check-run`, `issue`, or `both`. |
 | `fail_on_findings` | `true` | When false, `error`-severity findings are reported without failing CI. |
 | `on_incomplete_coverage` | `neutral` | Conclusion when verification was incomplete. Only `neutral` or `action_required`; `success` is rejected. |
-| `title` | `Documentation testing` | Check Run title. |
+| `title` | `Docs Testing` | Check Run title. |
 | `labels` | `["docs-testing"]` | Labels for issue mode. |

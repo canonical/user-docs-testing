@@ -117,7 +117,7 @@ def render_markdown(payload: dict) -> str:
     """A compact GitHub step summary. Successful runs stay short on purpose."""
     summary = payload["summary"]
     status = summary["status"]
-    out = [f"## Documentation testing — {status.upper()}", "", STATUS_MEANING[status], ""]
+    out = [f"## Docs Testing — {status.upper()}", "", STATUS_MEANING[status], ""]
 
     errors = payload.get("errors") or []
     if errors:

@@ -34,7 +34,7 @@ from docs_testing.results import EXIT_FOR_STATUS, EXIT_OK, EXIT_TOOL_ERROR, Resu
 from docs_testing.runner import run_deterministic
 
 STARTER_CONFIG = """\
-# Documentation testing — https://github.com/canonical/user-docs-testing
+# Docs Testing — https://github.com/canonical/user-docs-testing
 version: 1
 
 # The documentation to test.
@@ -80,7 +80,7 @@ def cmd_init(args) -> int:
         "Next:\n"
         "  1. Point `targets:` at your documentation and `sources.repo` at your product.\n"
         "  2. Run `docs-testing validate`.\n"
-        "  3. Install the workflow:  gh aw add canonical/user-docs-testing/docs-testing\n"
+        "  3. Install the workflow:  gh aw add canonical/user-docs-testing/workflows/docs-testing.md\n"
     )
     return EXIT_OK
 

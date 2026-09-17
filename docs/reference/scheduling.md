@@ -9,7 +9,7 @@ on:
     - cron: "weekly on monday"
 ```
 
-Manual runs need nothing extra — Actions → Documentation testing → Run workflow.
+Manual runs need nothing extra — Actions → Docs Testing → Run workflow.
 
 ## Schedule syntax
 
@@ -45,8 +45,8 @@ A single workflow cannot do this, because it has one configuration. Install it
 twice instead, each with its own name, schedule, and config:
 
 ```bash
-gh aw add canonical/user-docs-testing/docs-testing -n docs-testing-weekly
-gh aw add canonical/user-docs-testing/docs-testing -n docs-testing-monthly
+gh aw add canonical/user-docs-testing/workflows/docs-testing.md -n docs-testing-weekly
+gh aw add canonical/user-docs-testing/workflows/docs-testing.md -n docs-testing-monthly
 ```
 
 Point each at its own configuration file:

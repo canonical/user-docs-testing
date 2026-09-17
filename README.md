@@ -38,7 +38,7 @@ gh extension install githubnext/gh-aw
 Then, in your documentation repository:
 
 ```bash
-gh aw add canonical/user-docs-testing/docs-testing
+gh aw add canonical/user-docs-testing/workflows/docs-testing.md
 ```
 
 That adds `.github/workflows/docs-testing.md`, **compiles it for you**, and
@@ -48,7 +48,7 @@ improvements later.
 Not using Copilot? Choose the engine at install time:
 
 ```bash
-gh aw add canonical/user-docs-testing/docs-testing --engine claude
+gh aw add canonical/user-docs-testing/workflows/docs-testing.md --engine claude
 ```
 
 `copilot`, `claude`, `codex`, and `gemini` are all supported; each needs its own

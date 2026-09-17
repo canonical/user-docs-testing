@@ -12,7 +12,7 @@ file".
 
 ## What that means for you
 
-Installing with `gh aw add canonical/user-docs-testing/docs-testing` records the
+Installing with `gh aw add canonical/user-docs-testing/workflows/docs-testing.md` records the
 exact commit it installed in the `source:` field of your workflow, and pins every
 import and action to a SHA in the generated `.lock.yml`. Your runs are therefore
 reproducible even though the upstream reference is a branch: nothing changes

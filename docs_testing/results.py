@@ -152,7 +152,7 @@ class Results:
     def to_dict(self, *, fail_on_findings: bool = True) -> dict:
         status = self.status(fail_on_findings=fail_on_findings)
         return {
-            "tool": "user-docs-testing",
+            "tool": "docs-testing",
             "schema_version": SCHEMA_VERSION,
             "summary": {
                 "status": status,

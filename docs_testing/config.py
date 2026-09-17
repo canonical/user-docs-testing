@@ -169,7 +169,7 @@ class Reporting:
     mode: str = "check-run"
     fail_on_findings: bool = True
     on_incomplete_coverage: str = "neutral"
-    title: str = "Documentation testing"
+    title: str = "Docs Testing"
     labels: list[str] = field(default_factory=lambda: ["docs-testing"])
 
     def to_dict(self) -> dict:
@@ -488,7 +488,7 @@ def _parse_reporting(raw) -> Reporting:
         mode=mode,
         fail_on_findings=_as_bool(raw.get("fail_on_findings"), "reporting.fail_on_findings", True),
         on_incomplete_coverage=on_incomplete,
-        title=raw.get("title") or "Documentation testing",
+        title=raw.get("title") or "Docs Testing",
         labels=_as_list(raw.get("labels"), "reporting.labels") or ["docs-testing"],
     )
 

@@ -17,7 +17,7 @@ Pick the engine when you install, and gh-aw writes and compiles the workflow for
 you:
 
 ```bash
-gh aw add canonical/user-docs-testing/docs-testing --engine claude
+gh aw add canonical/user-docs-testing/workflows/docs-testing.md --engine claude
 ```
 
 The default is `copilot` with `copilot-requests: write` permission, which
