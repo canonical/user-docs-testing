@@ -125,10 +125,11 @@ job is to classify coverage and to give every finding a `severity`.
   blocks a documented workflow.
 - Group findings by area, and briefly note the surface you enumerated so a reader
   can gauge how much was checked. List blocked / unsupported areas separately.
-- Write findings as a list, never as a table, and never paste a URL as evidence.
-  Output is sanitised before publication, and a redacted value breaks a table row
-  outright where it costs a list one line. Describe a URL's scheme, host and path
-  in words, outside backticks.
+- Summarize findings in a table with short cells (severity, area, one-line
+  summary), and put the evidence under it as a list. Keep URLs, pipes and line
+  breaks out of cells: a sanitized value inside a cell breaks the row and takes
+  the table with it. Never paste a URL as evidence — describe its scheme, host
+  and path in words, outside backticks.
 
 ### Handling private sources safely
 

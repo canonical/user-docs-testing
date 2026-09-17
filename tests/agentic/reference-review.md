@@ -39,7 +39,7 @@ impression.** Before reviewing anything:
 
 ## Procedure
 
-For each in-scope file (from `targets` minus `exclude`, honouring
+For each in-scope file (from `targets` minus `exclude`, honoring
 `generated.mode`: `skip` and `deterministic-only` mean do not review, `annotate`
 means review but label findings as generated), work claim by claim:
 
@@ -127,13 +127,20 @@ you actually consulted to reach that conclusion. "Reviewed" with nothing cited i
 indistinguishable from not having looked, so report such an area as blocked
 instead.
 
-Group findings by file, as a list. Do not format findings as a table: a single
-redacted value breaks the row separators and takes the whole table with it,
-where a list loses only its own line. List blocked and unsupported areas
-**separately and explicitly**, so a reader can see exactly which material was not
-verified.
+Group findings by file. Summarize them in a table — one row per finding, with
+short cells: severity, line, and a one-line summary of the claim. Keep cells free
+of URLs, pipes and line breaks; a sanitized URL inside a cell breaks the row and
+takes the whole table with it.
 
-Report output is sanitised before publication: any URL that is not HTTPS, or
+Put the evidence under the table as a list, one entry per finding: the documented
+claim, what the owning source says, the source path and symbol, and why it
+matters. Detail belongs here, where a mangled value costs one line instead of the
+table.
+
+List blocked and unsupported areas **separately and explicitly**, so a reader can
+see exactly which material was not verified.
+
+Report output is sanitized before publication: any URL that is not HTTPS, or
 whose domain is not allowlisted, is replaced with `(redacted)`. That destroys the
 evidence a URL-valued finding rests on, and a half-removed URL inside backticks
 leaves the report malformed.

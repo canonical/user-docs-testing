@@ -129,14 +129,25 @@ single check run.
    - `neutral` — only `warning`-severity findings.
    - `success` — everything in scope reviewed or skipped, with no findings.
 
+   Open the report with one line giving the conclusion and the reason for it,
+   counted by severity: "**failure** — 5 findings of severity `error`", or
+   "**neutral** — 2 findings, all `warning`; nothing blocking". A reader must
+   never have to work out why the run went red. Say once, near that line, that
+   `error` blocks the run while `warning` does not.
+
    Group findings by test and by documentation file, and list blocked or
    unsupported areas separately so a reader can see what was NOT verified.
 
-   Write findings as a list, never as a table. Output is sanitised before
-   publication: any URL that is not HTTPS, or whose domain is not allowlisted,
-   becomes `(redacted)`. In a table that breaks the row and the whole table
-   with it; in a list it costs one line. For the same reason, never paste a URL
-   as evidence — describe its scheme, host and path in words, outside backticks.
+   Summarize findings in a table, one row per finding, with short cells:
+   severity, file, line, and a one-line summary. Put the evidence — claim,
+   what the source says, path and symbol, why it matters — in a list under the
+   table.
+
+   Output is sanitized before publication: any URL that is not HTTPS, or whose
+   domain is not allowlisted, becomes `(redacted)`. Inside a table cell that
+   breaks the row and takes the table with it, so keep URLs, pipes and line
+   breaks out of cells. Never paste a URL as evidence anywhere — describe its
+   scheme, host and path in words, outside backticks.
 
 You must emit a `create_check_run` even when there is nothing to fix.
 
