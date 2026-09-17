@@ -39,9 +39,20 @@ impression.** Before reviewing anything:
 
 ## Procedure
 
-For each in-scope file (from `targets` minus `exclude`, honoring
-`generated.mode`: `skip` and `deterministic-only` mean do not review, `annotate`
-means review but label findings as generated), work claim by claim:
+Your scope is `plan.agentic_tests[].files` in `results/all.json`: the in-scope
+files, already expanded from `targets` minus `exclude`. Use that list rather than
+expanding the globs yourself, and work through it in order, honoring
+`generated.mode` (`skip` and `deterministic-only` mean do not review, `annotate`
+means review but label findings as generated).
+
+Every file on that list must end with a coverage state. If you cannot review them
+all, stop and report the rest as `blocked-required-source-unavailable` only when a
+source is genuinely missing; otherwise say plainly that they were not reached and
+why. Silently omitting a file is the one outcome that must never happen: it is
+indistinguishable from a clean review, and it is the failure this whole report
+exists to prevent.
+
+For each file you do review, work claim by claim:
 
 1. **State the claim.** Identify a specific, checkable assertion — a default, a
    flag, a path, an endpoint, a name, a limit, a described behavior. Skip prose

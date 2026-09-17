@@ -130,6 +130,9 @@ job is to classify coverage and to give every finding a `severity`.
   breaks out of cells: a sanitized value inside a cell breaks the row and takes
   the table with it. Never paste a URL as evidence — describe its scheme, host
   and path in words, outside backticks.
+- Take your scope from `plan.agentic_tests[].files`, the already-expanded file
+  list, and give every file on it a coverage state. If you cannot reach them all,
+  say which ones and why; never leave a file out of the report entirely.
 
 ### Handling private sources safely
 

@@ -158,6 +158,15 @@ def run_deterministic(
     results.reviews_declared = len(config.agentic_tests)
     results.plan = config.plan()
 
+    # Expand each review's globs here rather than leaving the agent to do it. The
+    # agent is the one component whose output nothing checks, so handing it the
+    # authoritative file list is what makes a partial review visible: a file on
+    # this list with no coverage entry was not reviewed, whatever the report says.
+    for entry in results.plan.get("agentic_tests", []):
+        patterns = entry.get("targets") or []
+        matched = find_files(patterns, root, entry.get("exclude") or []) if patterns else []
+        entry["files"] = sorted(p.relative_to(root).as_posix() for p in matched)
+
     # Source evidence is infrastructure, not a test: it runs on every run so that
     # nothing downstream can claim to have reviewed a source that was never there.
     evidence, coverage = source_evidence.collect(config, sources_root)

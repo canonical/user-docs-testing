@@ -31,6 +31,13 @@ tests:
 
 Globs support `**`. Paths are relative to the repository root.
 
+Documentation generated from the source cannot drift from it, so reviewing it
+costs tokens to confirm something that is true by construction. Leave it out with
+`exclude`, or better, name it under a test's [`generated`](#fields-common-to-every-test)
+policy with `mode: skip` — that keeps it in scope and reports it as
+`skipped-by-policy`, so a reader can see it was deliberately not reviewed rather
+than quietly missing.
+
 ## `sources`
 
 A source is a repository holding the authoritative definition of some documented

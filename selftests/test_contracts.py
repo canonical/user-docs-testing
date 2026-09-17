@@ -572,6 +572,57 @@ class EmptyScope(ContractTest):
         self.assertStatus(payload, PASS)
 
 
+class PlanNamesEveryInScopeFile(ContractTest):
+    """The agent is the one component whose output nothing checks.
+
+    Naming the files up front is what lets a reader tell a partial review from a
+    complete one: a file listed here with no coverage entry was not reviewed.
+    """
+
+    def test_the_plan_lists_the_files_a_review_must_account_for(self):
+        self.project.doc("cli.md", "Options: --verbose.")
+        self.project.doc("api.md", "Endpoints: /health.")
+        self.project.source("product")
+        self.project.config(
+            """
+            version: 1
+            targets: "docs/reference/**/*.md"
+            sources:
+              - name: product
+                repo: a/b
+            tests:
+              - reference-review
+            """
+        )
+        payload, _ = self.project.run()
+        files = payload["plan"]["agentic_tests"][0]["files"]
+        self.assertEqual(
+            sorted(files), ["docs/reference/api.md", "docs/reference/cli.md"]
+        )
+
+    def test_excluded_files_are_not_named_as_in_scope(self):
+        self.project.doc("cli.md", "Options: --verbose.")
+        self.project.doc("generated.md", "Generated, do not edit.")
+        self.project.source("product")
+        self.project.config(
+            """
+            version: 1
+            targets: "docs/reference/**/*.md"
+            exclude:
+              - "docs/reference/generated.md"
+            sources:
+              - name: product
+                repo: a/b
+            tests:
+              - reference-review
+            """
+        )
+        payload, _ = self.project.run()
+        self.assertEqual(
+            payload["plan"]["agentic_tests"][0]["files"], ["docs/reference/cli.md"]
+        )
+
+
 class SourceEvidence(ContractTest):
     """`commit` is documented as hard proof a source was really checked out."""
 
