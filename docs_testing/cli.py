@@ -67,6 +67,40 @@ def _load_or_report(path: Path) -> Config | int:
         return EXIT_TOOL_ERROR
 
 
+RESULTS_IGNORE = "results/"
+
+
+def _git_root(start: Path) -> Path | None:
+    for directory in [start, *start.parents]:
+        if (directory / ".git").exists():
+            return directory
+    return None
+
+
+def _ignore_results(config_path: Path) -> str | None:
+    """Keep `docs-testing run` output out of the user's repository.
+
+    A local run writes results next to the configuration, which would otherwise
+    leave untracked files behind in a repository the user never asked us to
+    touch. Returns a line to show the user, or None when there was nothing to do.
+    """
+    root = _git_root(config_path.parent.resolve())
+    if root is None:
+        return None
+    gitignore = root / ".gitignore"
+    existing = gitignore.read_text(encoding="utf-8") if gitignore.exists() else ""
+    if any(line.strip() == RESULTS_IGNORE for line in existing.splitlines()):
+        return None
+    separator = "" if existing == "" or existing.endswith("\n\n") else "\n"
+    gitignore.write_text(
+        existing
+        + separator
+        + f"# Local check results, written by `docs-testing run`\n{RESULTS_IGNORE}\n",
+        encoding="utf-8",
+    )
+    return f"Added {RESULTS_IGNORE} to {gitignore}"
+
+
 # --- Commands ---------------------------------------------------------------
 
 
@@ -75,9 +109,11 @@ def cmd_init(args) -> int:
     if path.exists() and not args.force:
         return _fail(f"{path} already exists (use --force to overwrite)")
     path.write_text(STARTER_CONFIG.format(repo=args.repo or "my-org/my-product"), encoding="utf-8")
+    ignored = _ignore_results(path)
     sys.stdout.write(
-        f"Wrote {path}\n\n"
-        "Next:\n"
+        f"Wrote {path}\n"
+        + (f"{ignored}\n" if ignored else "")
+        + "\nNext:\n"
         "  1. Point `targets:` at your documentation and `sources.repo` at your product.\n"
         "  2. Run `docs-testing validate`.\n"
         "  3. Install the workflow:  gh aw add canonical/user-docs-testing/workflows/docs-testing.md\n"
