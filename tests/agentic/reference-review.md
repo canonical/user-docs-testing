@@ -61,16 +61,27 @@ means review but label findings as generated), work claim by claim:
      form field does not prove a backend default, a client constant does not
      prove server behavior;
    - a test fixture, when the production schema or parser says otherwise;
-   - a documentation example, which is not an implementation.
+   - a documentation example, which is not an implementation;
+   - a docstring, comment or sample config inside the owning source, when the
+     executable value says otherwise. A source can be stale about itself.
 
    When the owning source is available, it outranks all of these. When two
    *owning* sources disagree, report the cross-source disagreement rather than
    picking a side.
-6. **Check version scope.** Each source is checked out at one `ref`, while docs
+6. **Report a source that contradicts itself.** When a docstring, comment or
+   sample config in the owning source disagrees with that source's executable
+   value, judge the documentation against the executable value. If the
+   documentation matches it, the documentation is correct: do not report it as
+   drift, because a finding tells a writer to change a line, and this line is
+   already right. Report the source's internal contradiction instead, as a
+   `warning` against the source file, naming both values and saying plainly that
+   the documentation under review needs no change. Someone should fix the
+   source, so the observation must not be lost — it is simply not drift.
+7. **Check version scope.** Each source is checked out at one `ref`, while docs
    often cover several versions ("since 25.10", "deprecated in 26.10"). A claim
    scoped to a different version than the source `ref` is not drift — note the
    version skew instead.
-7. **Prefer silence.** If after the above you are not confident, do not flag. A
+8. **Prefer silence.** If after the above you are not confident, do not flag. A
    false positive costs a writer more than a missed one.
 
 If `skip_deterministically_covered` is true, read `results/all.json` first and do
@@ -148,7 +159,9 @@ leaves the report malformed.
 So **never paste a URL as evidence**. Describe it — name the scheme, host and
 path in words, as in "plain HTTP on example.com, path /ping" — and leave it out
 of backticks. This applies to the documented value and the source value alike,
-whenever either is a URL. A described value survives; a pasted one may not.
+whenever either is a URL. It also applies to quoted source: when the line you
+want to quote contains a URL, do not reproduce it verbatim — quote the part that
+matters and describe the URL. A described value survives; a pasted one may not.
 
 ### Private sources
 

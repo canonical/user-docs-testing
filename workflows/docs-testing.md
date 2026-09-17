@@ -129,11 +129,13 @@ single check run.
    - `neutral` — only `warning`-severity findings.
    - `success` — everything in scope reviewed or skipped, with no findings.
 
-   Open the report with one line giving the conclusion and the reason for it,
-   counted by severity: "**failure** — 5 findings of severity `error`", or
-   "**neutral** — 2 findings, all `warning`; nothing blocking". A reader must
-   never have to work out why the run went red. Say once, near that line, that
-   `error` blocks the run while `warning` does not.
+   Open the report with exactly one line giving the conclusion and the reason
+   for it, counted by severity: "**failure** — 5 findings of severity `error`,
+   2 `warning`", or "**neutral** — 2 findings, all `warning`; nothing blocking".
+   Write that line once and do not repeat it in a later section. The counts must
+   match the findings you actually list — count them after writing them, not
+   before. A reader must never have to work out why the run went red. Say once,
+   near that line, that `error` blocks the run while `warning` does not.
 
    Group findings by test and by documentation file, and list blocked or
    unsupported areas separately so a reader can see what was NOT verified.
