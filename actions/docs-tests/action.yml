@@ -30,11 +30,14 @@ inputs:
     default: "false"
 
 outputs:
-  status:
-    description: "pass, warn, incomplete, fail, or error."
-    value: ${{ steps.run.outputs.status }}
+  deterministic-status:
+    description: >-
+      pass, warn, incomplete, fail, or error — for the deterministic checks only.
+      This action runs before the agent, so no review finding can be reflected
+      here. The run's real verdict is the Check Run the agent publishes.
+    value: ${{ steps.run.outputs.deterministic-status }}
   results:
-    description: "Path to the combined results file."
+    description: "Path to the results file the agent then reviews and reports on."
     value: ${{ steps.run.outputs.results }}
 
 runs:
@@ -80,7 +83,7 @@ runs:
         code=$?
 
         status=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['summary']['status'])" "$OUTPUT" 2>/dev/null || echo error)
-        echo "status=$status" >> "$GITHUB_OUTPUT"
+        echo "deterministic-status=$status" >> "$GITHUB_OUTPUT"
         echo "results=$OUTPUT" >> "$GITHUB_OUTPUT"
 
         # Exit 1 (documentation findings) and 3 (incomplete) are outcomes to be

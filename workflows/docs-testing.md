@@ -129,21 +129,30 @@ single check run.
    - `neutral` — only `warning`-severity findings.
    - `success` — everything in scope reviewed or skipped, with no findings.
 
-   Open the report with exactly one line giving the conclusion and the reason
-   for it, counted by severity: "**failure** — 5 findings of severity `error`,
-   2 `warning`", or "**neutral** — 2 findings, all `warning`; nothing blocking".
-   Write that line once and do not repeat it in a later section. The counts must
-   match the findings you actually list — count them after writing them, not
-   before. A reader must never have to work out why the run went red. Say once,
-   near that line, that `error` blocks the run while `warning` does not.
+   Put the **whole report in the check run's `summary`** field. `summary` is
+   what a reader sees; anything you put in `text` instead is easily missed, and
+   a summary holding only a verdict looks like a run that reported nothing. Keep
+   `title` to a short phrase such as "7 issues found".
 
-   Group findings by test and by documentation file, and list blocked or
-   unsupported areas separately so a reader can see what was NOT verified.
+   The report has four parts, in this order, and all four must be present in
+   `summary`:
 
-   Summarize findings in a table, one row per finding, with short cells:
-   severity, file, line, and a one-line summary. Put the evidence — claim,
-   what the source says, path and symbol, why it matters — in a list under the
-   table.
+   1. **The verdict.** One line giving the conclusion and the reason for it,
+      counted by severity: "**failure** — 5 findings of severity `error`,
+      2 `warning`", or "**neutral** — 2 findings, all `warning`; nothing
+      blocking". Say once, here, that `error` blocks the run and `warning` does
+      not. The counts must match the findings you list below — count them after
+      writing them, not before. Do not repeat this line later in the report.
+   2. **The findings**, grouped by test and by documentation file, as a table:
+      one row per finding, short cells — severity, file, line, one-line summary.
+   3. **The evidence**, as a list under the table, one entry per finding: the
+      documented claim, what the owning source says, the source path and symbol,
+      and why it matters.
+   4. **What was not verified.** Blocked or unsupported areas, listed
+      separately. Say so explicitly when there are none.
+
+   A verdict on its own is not a report. Parts 2 to 4 are what a writer acts on,
+   and a conclusion line with nothing under it is of no use to anyone.
 
    Output is sanitized before publication: any URL that is not HTTPS, or whose
    domain is not allowlisted, becomes `(redacted)`. Inside a table cell that
