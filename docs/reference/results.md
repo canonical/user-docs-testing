@@ -2,9 +2,7 @@
 
 ## The five outcomes
 
-A documentation test can end in five ways, and they must never collapse into each
-other. In particular, a tool that failed and documentation that is correct have to
-look completely different.
+A documentation test can end in five ways, and they must never collapse into each other. In particular, a tool that failed and documentation that is correct have to look completely different.
 
 | Outcome | Meaning | Exit status | Check Run |
 | ------- | ------- | ----------- | --------- |
@@ -14,37 +12,21 @@ look completely different.
 | `fail` | An actionable documentation problem was found. | `1` | `failure` |
 | `error` | The tool failed; the results are not trustworthy. | `2` | `action_required` |
 
-Precedence is `error` > `fail` > `incomplete` > `warn` > `pass`. `error` outranks
-everything because a run that did not execute correctly tells you nothing about
-the documentation, including the parts that appeared to pass.
+Precedence is `error` > `fail` > `incomplete` > `warn` > `pass`. `error` outranks everything because a run that did not execute correctly tells you nothing about the documentation, including the parts that appeared to pass.
 
 ### What produces each outcome
 
-**`fail`** — a finding with `severity: error`: a documented claim the owning
-source contradicts, or a non-zero exit from one of your own commands.
+**`fail`** — a finding with `severity: error`: a documented claim the owning source contradicts, or a non-zero exit from one of your own commands.
 
-**`warn`** — only `severity: warning` findings: undocumented surface, drifting
-terminology, a stale but still-working example. Worth seeing, not worth blocking
-a merge. Set `severity: error` on a check, or `fail_on_findings: false`
-globally, to move the line.
+**`warn`** — only `severity: warning` findings: undocumented surface, drifting terminology, a stale but still-working example. Worth seeing, not worth blocking a merge. Set `severity: error` on a check, or `fail_on_findings: false` globally, to move the line.
 
-**`incomplete`** — nothing was proven wrong, but something in scope was never
-checked: a required source could not be read, no configured source owns an area,
-or a surface manifest was absent. This is not a pass. `neutral` renders
-differently from success but does not block a required check; set
-`reporting.on_incomplete_coverage: action_required` if incomplete verification
-should gate merges. `success` is rejected by the configuration validator.
+**`incomplete`** — nothing was proven wrong, but something in scope was never checked: a required source could not be read, no configured source owns an area, or a surface manifest was absent. This is not a pass. `neutral` renders differently from success but does not block a required check; set `reporting.on_incomplete_coverage: action_required` if incomplete verification should gate merges. `success` is rejected by the configuration validator.
 
-**`error`** — the run itself broke: a command crashed or was not found, a
-declared results file was never written, results JSON was unreadable, or the
-configuration was malformed. These are reported as `errors`, never as findings,
-and never as zero findings.
+**`error`** — the run itself broke: a command crashed or was not found, a declared results file was never written, results JSON was unreadable, or the configuration was malformed. These are reported as `errors`, never as findings, and never as zero findings.
 
 ## Coverage
 
-Pass/fail answers "did anything fail?" but not "what was actually checked?".
-Reviews are rarely whole-repository: some files can be verified against an
-available source while others cannot.
+Pass/fail answers "did anything fail?" but not "what was actually checked?". Reviews are rarely whole-repository: some files can be verified against an available source while others cannot.
 
 Every test classifies each file, glob, or claim category into one state:
 
@@ -60,8 +42,7 @@ The last two mean "not verified", and either one makes the run `incomplete`.
 
 ## Source evidence
 
-Coverage says what a test *claims* it reviewed. `source_evidence` records what was
-actually on disk, so those claims can be audited rather than trusted:
+Coverage says what a test *claims* it reviewed. `source_evidence` records what was actually on disk, so those claims can be audited rather than trusted:
 
 ```json
 "source_evidence": [
@@ -75,14 +56,9 @@ actually on disk, so those claims can be audited rather than trusted:
 ]
 ```
 
-This is collected automatically on every run, before anything else. `commit` is
-the useful field: it is the only hard proof that a private source was really
-accessed, and at which revision. Without it, a run where a private source
-silently failed to check out and a run where it was read thoroughly would end the
-same way.
+This is collected automatically on every run, before anything else. `commit` is the useful field: it is the only hard proof that a private source was really accessed, and at which revision. Without it, a run where a private source silently failed to check out and a run where it was read thoroughly would end the same way.
 
-A review must not report an area as verified against a source whose evidence says
-`"available": false`.
+A review must not report an area as verified against a source whose evidence says `"available": false`.
 
 ## The combined results file
 
@@ -112,15 +88,11 @@ A review must not report an area as verified against a source whose evidence say
 }
 ```
 
-`plan` is the validated, normalized configuration: which reviews to run, with
-what scope, which source owns what, and how to conclude. The agent uses it
-instead of re-reading the YAML, so configuration is interpreted in exactly one
-place.
+`plan` is the validated, normalized configuration: which reviews to run, with what scope, which source owns what, and how to conclude. The agent uses it instead of re-reading the YAML, so configuration is interpreted in exactly one place.
 
 ## Extending with your own check
 
-A test declaring `results:` writes a JSON object with a `findings` list. Any
-language works.
+A test declaring `results:` writes a JSON object with a `findings` list. Any language works.
 
 ```json
 {
@@ -164,6 +136,4 @@ language works.
 | `sources` | no | Sources this area depends on. |
 | `detail` | no | One line explaining the state, especially why it is blocked. |
 
-A malformed finding or coverage entry is reported as a tool error, not silently
-dropped — dropping it could shrink the finding count and turn a real failure into
-a pass.
+A malformed finding or coverage entry is reported as a tool error, not silently dropped — dropping it could shrink the finding count and turn a real failure into a pass.

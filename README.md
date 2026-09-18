@@ -1,15 +1,10 @@
-# Docs Testing
+# User documentation testing
 
-Test documentation against the product it describes, and report the result as a
-GitHub Check Run.
+Test documentation against the product it describes, and report the result as a GitHub Check Run.
 
-Documentation goes stale silently. Nothing fails when a default changes, a flag
-is renamed, or an option ships undocumented — until a user follows the
-instructions and they do not work. This runs those checks in CI, the way you
-already run tests.
+Documentation goes stale silently. Nothing fails when a default changes, a flag is renamed, or an option ships undocumented — until a user follows the instructions and they do not work. This runs those checks in CI, the way you already run tests.
 
-> **Status: pre-release.** No version has been tagged yet; installations track
-> `main` but are pinned to a commit. See [versioning](docs/reference/versioning.md).
+> **Status: pre-release.** No version has been tagged yet; installations track `main` but are pinned to a commit. See [versioning](docs/explanation/versioning.md).
 
 ## What it checks
 
@@ -18,18 +13,13 @@ already run tests.
 | `reference-review` | Does the documentation state something the product contradicts? |
 | `reference-completeness` | Does product surface exist that the documentation never mentions? |
 
-These two reviews are what the tool ships, performed by an AI engine. Alongside
-them you can run **deterministic checks** — any command of your own, in any
-language — and their findings appear in the same report.
+These two reviews are what the tool ships, performed by an AI engine. Alongside them you can run **deterministic checks** — any command of your own, in any language — and their findings appear in the same report.
 
-Every finding must cite the product source that proves it. A review that cannot
-reach its source reports the affected documentation as **unverified** — never as
-passing.
+Every finding must cite the product source that proves it. A review that cannot reach its source reports the affected documentation as **unverified** — never as passing.
 
 ## Install
 
-You need the [gh CLI](https://cli.github.com/) and the
-[gh-aw extension](https://github.com/githubnext/gh-aw):
+You need the [gh CLI](https://cli.github.com/) and the [gh-aw extension](https://github.com/githubnext/gh-aw):
 
 ```bash
 gh extension install githubnext/gh-aw
@@ -41,9 +31,7 @@ Then, in your documentation repository:
 gh aw add canonical/user-docs-testing/workflows/docs-testing.md
 ```
 
-That adds `.github/workflows/docs-testing.md`, **compiles it for you**, and
-records where it came from so `gh aw update docs-testing` can pick up
-improvements later.
+That adds `.github/workflows/docs-testing.md`, **compiles it for you**, and records where it came from so `gh aw update docs-testing` can pick up improvements later.
 
 Not using Copilot? Choose the engine at install time:
 
@@ -51,8 +39,7 @@ Not using Copilot? Choose the engine at install time:
 gh aw add canonical/user-docs-testing/workflows/docs-testing.md --engine claude
 ```
 
-`copilot`, `claude`, `codex`, and `gemini` are all supported; each needs its own
-secret. See [engines and tokens](docs/reference/engines.md).
+`copilot`, `claude`, `codex`, and `gemini` are all supported; each needs its own secret. See [engines and tokens](docs/how-to/engines.md).
 
 ## Configure
 
@@ -71,8 +58,7 @@ tests:
   - reference-review
 ```
 
-Then tell the workflow to check that product out. In
-`.github/workflows/docs-testing.md`, under `checkout:`:
+Then tell the workflow to check that product out. In `.github/workflows/docs-testing.md`, under `checkout:`:
 
 ```yaml
   - repository: my-org/my-product
@@ -80,16 +66,14 @@ Then tell the workflow to check that product out. In
     path: sources/product
 ```
 
-The `path` must be `sources/<name>`, matching the source's `name`. Recompile and
-commit:
+The `path` must be `sources/<name>`, matching the source's `name`. Recompile and commit:
 
 ```bash
 gh aw compile
 git add .github/workflows/ docs-testing.config.yml && git commit
 ```
 
-GitHub Actions cannot run Markdown, so `gh aw compile` generates the `.lock.yml`
-that Actions actually executes. It has to be committed next to its `.md`.
+GitHub Actions cannot run Markdown, so `gh aw compile` generates the `.lock.yml` that Actions actually executes. It has to be committed next to its `.md`.
 
 ## Reading the result
 
@@ -103,27 +87,19 @@ Five outcomes, and they never collapse into each other:
 | **Fail** | An actionable documentation problem was found. | `failure` |
 | **Tool error** | The tool itself failed; the results mean nothing. | `action_required` |
 
-The last two rows are the point of the design. A crashed check, an unreadable
-results file, or a private source that failed to clone must never come back as
-"your documentation passed". Full detail in
-[the results reference](docs/reference/results.md).
+The last two rows are the point of the design. A crashed check, an unreadable results file, or a private source that failed to clone must never come back as "your documentation passed". Full detail in [the results reference](docs/reference/results.md).
 
-Your configuration is checked first, before any test runs, so a typo fails in
-seconds with a message naming the field and the fix rather than surfacing later
-as a confusing review.
+Your configuration is checked first, before any test runs, so a typo fails in seconds with a message naming the field and the fix rather than surfacing later as a confusing review.
 
 ## Examples
 
 - [examples/minimal](examples/minimal/) — the common case. Start here.
-- [examples/landscape](examples/landscape/) — a real product implemented across
-  six repositories, some private, with source ownership and partial coverage.
-- [docs-testing.config.example.yml](docs-testing.config.example.yml) — every
-  supported field, annotated, with real values.
+- [examples/landscape](examples/landscape/) — a real product implemented across six repositories, some private, with source ownership and partial coverage.
+- [docs-testing.config.example.yml](docs-testing.config.example.yml) — every supported field, annotated, with real values.
 
 ## Optional: run the checks locally
 
-Nothing below is required. CI runs all of this for you. It exists for a faster
-loop while you are writing your configuration.
+Nothing below is required. CI runs all of this for you. It exists for a faster loop while you are writing your configuration.
 
 ```bash
 pipx install git+https://github.com/canonical/user-docs-testing
@@ -135,14 +111,17 @@ docs-testing list       # what checks are available?
 
 ## Going further
 
-- [Configuration reference](docs/reference/configuration.md) — every field,
-  including source ownership, generated documentation, and custom checks.
-- [Results reference](docs/reference/results.md) — outcomes, coverage, and the
-  schema for writing your own check.
-- [Scheduling](docs/reference/scheduling.md) — cadence, manual runs, and running
-  different scopes at different frequencies.
-- [Engines, tokens, and private sources](docs/reference/engines.md) — which
-  credential does what, and how to keep a private source safe.
-- [How it works](docs/reference/how-it-works.md) — the lock file, what compiles
-  when, and what happens during a run.
-- [Versioning](docs/reference/versioning.md) — what is stable and what is not.
+**How-to guides**
+
+- [How to set up engines and access private sources](docs/how-to/engines.md) — which credential does what, and how to keep a private source safe.
+- [How to schedule runs](docs/how-to/scheduling.md) — cadence, manual runs, and running different scopes at different frequencies.
+
+**Reference**
+
+- [Configuration](docs/reference/configuration.md) — every field, including source ownership, generated documentation, and custom checks.
+- [Results](docs/reference/results.md) — outcomes, coverage, and the schema for writing your own check.
+
+**Explanation**
+
+- [How it works](docs/explanation/how-it-works.md) — the lock file, what compiles when, what happens during a run, and how much one review can cover.
+- [Versioning](docs/explanation/versioning.md) — what is stable and what is not.

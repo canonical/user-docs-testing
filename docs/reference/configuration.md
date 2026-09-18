@@ -1,9 +1,6 @@
 # Configuration reference
 
-Everything Docs Testing does is driven by `docs-testing.config.yml` in the root of
-your documentation repository. Run `docs-testing validate` after changing it;
-every field below is checked, and mistakes are reported with a location and a
-suggested fix.
+Everything the documentation testing workflow does is driven by `docs-testing.config.yml` in the root of your documentation repository. Run `docs-testing validate` after changing it; every field below is checked, and mistakes are reported with a location and a suggested fix.
 
 The smallest valid configuration:
 
@@ -31,23 +28,13 @@ tests:
 
 Globs support `**`. Paths are relative to the repository root.
 
-Documentation generated from the source cannot drift from it, so reviewing it
-costs tokens to confirm something that is true by construction. Leave it out with
-`exclude`, or better, name it under a test's [`generated`](#fields-common-to-every-test)
-policy with `mode: skip` — that keeps it in scope and reports it as
-`skipped-by-policy`, so a reader can see it was deliberately not reviewed rather
-than quietly missing.
+Documentation generated from the source cannot drift from it, so reviewing it costs tokens to confirm something that is true by construction. Leave it out with `exclude`, or better, name it under a test's [`generated`](#fields-common-to-every-test) policy with `mode: skip` — that keeps it in scope and reports it as `skipped-by-policy`, so a reader can see it was deliberately not reviewed rather than quietly missing.
 
-Keeping generated pages out also keeps a review within the size we have tested,
-which is 22 files. See
-[how much one review can cover](how-it-works.md#how-much-one-review-can-cover)
-for what happens above that.
+Keeping generated pages out also keeps a review within the size we have tested, which is 22 files. See [how much one review can cover](../explanation/how-it-works.md#how-much-one-review-can-cover) for what happens above that.
 
 ## `sources`
 
-A source is a repository holding the authoritative definition of some documented
-behavior. Findings must cite one, so a review with no sources cannot prove
-anything.
+A source is a repository holding the authoritative definition of some documented behavior. Findings must cite one, so a review with no sources cannot prove anything.
 
 ```yaml
 sources:
@@ -69,21 +56,14 @@ sources:
 
 `required` decides what happens when a source cannot be read:
 
-- **Required** and unavailable: every area depending on it is reported as
-  `blocked-required-source-unavailable`. The run is *incomplete*, never a pass.
-  Areas backed by other available sources are still reviewed.
-- **Optional** (`required: false`) and unavailable: the areas depending on it are
-  reported as `unsupported-by-configured-sources`. The run continues.
+- **Required** and unavailable: every area depending on it is reported as `blocked-required-source-unavailable`. The run is *incomplete*, never a pass. Areas backed by other available sources are still reviewed.
+- **Optional** (`required: false`) and unavailable: the areas depending on it are reported as `unsupported-by-configured-sources`. The run continues.
 
-Each source needs a matching `checkout:` block in
-`.github/workflows/docs-testing.md`, with `path: sources/<name>`.
-`docs-testing validate` fails if a required source has no checkout, because a
-review that silently loses its source verifies nothing.
+Each source needs a matching `checkout:` block in `.github/workflows/docs-testing.md`, with `path: sources/<name>`. `docs-testing validate` fails if a required source has no checkout, because a review that silently loses its source verifies nothing.
 
 ## `source_map`
 
-States once which source owns which documentation, so every test checks an area
-against the component that *produces* the interface rather than guessing.
+States once which source owns which documentation, so every test checks an area against the component that *produces* the interface rather than guessing.
 
 ```yaml
 source_map:
@@ -102,14 +82,11 @@ source_map:
 | `paths` | yes | Documentation paths this entry covers. |
 | `sources` | yes | Names of the owning sources. An empty list means nothing owns it. |
 
-Paths matched by no entry fall back to the test's own `sources` list. A test may
-set its own `source_map` to override ownership for the paths it matches; most
-should not need to.
+Paths matched by no entry fall back to the test's own `sources` list. A test may set its own `source_map` to override ownership for the paths it matches; most should not need to.
 
 ## `tests`
 
-Each entry is either a built-in, or your own command. `docs-testing list` prints
-what is available.
+Each entry is either a built-in, or your own command. `docs-testing list` prints what is available.
 
 ### Shipped reviews
 
@@ -128,13 +105,11 @@ tests:
 | `reference-review` | Does the documentation state something the owning product contradicts? |
 | `reference-completeness` | Does user-facing product surface exist that the documentation never mentions? |
 
-These are the only checks this tool ships. Every deterministic check is a
-command of your own.
+These are the only checks this tool ships. Every deterministic check is a command of your own.
 
 ### Deterministic checks
 
-A deterministic check is any command, in any language. Nothing about it is
-AI-driven, and it runs locally as readily as in CI.
+A deterministic check is any command, in any language. Nothing about it is AI-driven, and it runs locally as readily as in CI.
 
 ```yaml
 tests:
@@ -145,31 +120,22 @@ tests:
       - "pip install -r scripts/requirements.txt"
 ```
 
-With `results`, the file is the report — see
-[the results schema](results.md#extending-with-your-own-check). Without it, the
-command's exit status is the result: zero passes, non-zero becomes one finding
-carrying the command's output. That is enough for an existing pass/fail linter.
+With `results`, the file is the report — see [the results schema](results.md#extending-with-your-own-check). Without it, the command's exit status is the result: zero passes, non-zero becomes one finding carrying the command's output. That is enough for an existing pass/fail linter.
 
-Commands run **without a shell**, so configuration cannot inject one. A command
-containing `|`, `&&`, `;`, `>` or similar is rejected with an explanation; put
-the pipeline in a script and call the script.
+Commands run **without a shell**, so configuration cannot inject one. A command containing `|`, `&&`, `;`, `>` or similar is rejected with an explanation; put the pipeline in a script and call the script.
 
-`targets` and `exclude` scope the **reviews**. A command is your own program, so
-it scopes itself through its own arguments.
+`targets` and `exclude` scope the **reviews**. A command is your own program, so it scopes itself through its own arguments.
 
 #### Worked examples
 
-The [`tests/deterministic/`](https://github.com/canonical/user-docs-testing/tree/main/tests/deterministic)
-directory of the user-docs-testing repository holds two scripts that show how to
-write a check of this shape:
+The [`tests/deterministic/`](https://github.com/canonical/user-docs-testing/tree/main/tests/deterministic) directory of the user-docs-testing repository holds two scripts that show how to write a check of this shape:
 
 | Script | What it demonstrates |
 | ------ | -------------------- |
 | `undocumented_surface.py` | Diffing a machine-readable interface manifest — OpenAPI, JSON Schema, or a captured `--help` — against the documentation, and emitting findings with a `covered_topic` so a review skips them. |
 | `source_manifest.py` | Emitting `coverage` and `source_evidence`, so unverifiable material is reported as blocked rather than passing. |
 
-They are **demonstrations, not checks you are expected to run**. Read them, copy
-what is useful, and write the checks your project actually needs.
+They are **demonstrations, not checks you are expected to run**. Read them, copy what is useful, and write the checks your project actually needs.
 
 ### Fields common to every test
 
