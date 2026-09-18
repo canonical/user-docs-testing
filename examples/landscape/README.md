@@ -1,20 +1,14 @@
-# Landscape example
+# Product example: several sources, one private
 
-A worked configuration for a product implemented across four repositories, one of
-them private. It exists to show source ownership, required versus optional
-sources, and honest partial coverage against something real. It is **not** used
-by this repository's own CI.
+A worked configuration for a product implemented across four repositories, one of them private. It exists to show source ownership, required versus optional sources, and honest partial coverage against something real. It is **not** used by this repository's own CI.
 
-If you are starting out, read [examples/minimal](../minimal/) first — this one is
-deliberately the complicated end of the spectrum.
+Landscape is used here only because it is a real product with this shape; nothing in the tool is specific to it.
+
+If you are starting out, read [examples/minimal](../minimal/) first — this one is deliberately the complicated end of the spectrum.
 
 ## What makes it a useful example
 
-The authoritative source for a Landscape claim depends on which component
-implements it. The `config/` pages document the *server's* `service.conf`, not
-the client's, so they are checked against the private server repository. Charm
-options belong to the operator repository. Nothing owns the packaging and PPA
-page at all.
+The authoritative source for a Landscape claim depends on which component implements it. The `config/` pages document the *server's* `service.conf`, not the client's, so they are checked against the private server repository. Charm options belong to the operator repository. Nothing owns the packaging and PPA page at all.
 
 The configuration states that ownership once, and every review uses it.
 
@@ -36,15 +30,8 @@ docs-testing validate
 docs-testing run
 ```
 
-With only the public `landscape-client` source, most of the reference set is
-reported as `blocked-required-source-unavailable` and the run is **incomplete**.
-That is the example working correctly: it refuses to pass documentation it could
-not verify, and it does not invent findings to explain the gap.
+With only the public `landscape-client` source, most of the reference set is reported as `blocked-required-source-unavailable` and the run is **incomplete**. That is the example working correctly: it refuses to pass documentation it could not verify, and it does not invent findings to explain the gap.
 
-Clone `landscape-server` into `sources/` if you have access — it is the one
-private repository here, and the only one needing a token. The public
-`landscape-server-operator` and `landscape-ui` need none. The blocked areas become
-reviewable.
+Clone `landscape-server` into `sources/` if you have access — it is the one private repository here, and the only one needing a token. The public `landscape-server-operator` and `landscape-ui` need none. The blocked areas become reviewable.
 
-`reference-review` itself is performed by an AI engine and needs the installed
-workflow; see the [README](../../README.md).
+`reference-review` itself is performed by an AI engine and needs the installed workflow; see the [README](../../README.md).

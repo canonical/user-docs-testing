@@ -13,16 +13,10 @@ Manual runs need nothing extra — Actions → Docs Testing → Run workflow.
 
 ## Schedule syntax
 
-gh-aw accepts friendly expressions and raw cron:
+Schedules are gh-aw's, and it accepts both friendly expressions and raw cron. The [gh-aw triggers reference](https://github.github.io/gh-aw/reference/triggers/) documents the full syntax. Two behaviors matter here:
 
-| Expression | Meaning |
-| ---------- | ------- |
-| `daily` | Once a day |
-| `weekly on monday` | Once a week |
-| `weekly on friday at 09:00` | With a time |
-| `0 6 1 * *` | Raw cron — required for monthly |
-
-Friendly expressions are *scattered*: gh-aw converts them to a fixed minute derived from your repository name, so a hundred repositories running "weekly on monday" do not all start at 06:00. Raw cron is used exactly as written.
+- Friendly expressions such as `daily` or `weekly on monday` are *scattered*: gh-aw derives a fixed minute from your repository name, so many repositories sharing a schedule do not all start at once. Raw cron is used exactly as written.
+- Monthly schedules require raw cron, for example `0 6 1 * *`.
 
 Several entries are allowed:
 
@@ -36,9 +30,7 @@ Both run the same tests over the same scope, just more often.
 
 ## Different scopes on different cadences
 
-A cheap check often and an expensive one occasionally is a common want — for example a fast deterministic pass every week and a full review monthly.
-
-A single workflow cannot do this, because it has one configuration. Install it twice instead, each with its own name, schedule, and config:
+Running checks at different cadences requires multiple installations, because a workflow has one configuration. For example, to run a small check weekly and a larger one monthly, install the project twice, each with its own name, schedule, and config:
 
 ```bash
 gh aw add canonical/user-docs-testing/workflows/docs-testing.md -n docs-testing-weekly

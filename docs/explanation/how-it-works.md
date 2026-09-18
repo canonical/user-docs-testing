@@ -1,10 +1,10 @@
 # How it works
 
-You do not need this page to run documentation testing. It is here for when something looks surprising and you want to know what is actually running.
+This page describes how the project runs.
 
 ## The pieces
 
-The workflow is a thin layer over [GitHub Agentic Workflows](https://github.github.io/gh-aw/) (gh-aw), which is what lets a Markdown file describe an AI-driven GitHub Actions workflow.
+The workflow is a thin wrapper around [gh-aw](https://github.github.io/gh-aw/), which uses a Markdown file to describe a GitHub Actions workflow driven by an AI engine. Compilation, pinning, engine selection, and safe outputs are all gh-aw's; the configuration format and the checks are this project's.
 
 | Piece | Lives in | What it is |
 | ----- | -------- | ---------- |
@@ -54,12 +54,12 @@ Step 2 running before step 3 is deliberate: it means a review cannot claim to ha
 
 ## How much one review can cover
 
-The largest review we have tested put 22 files in scope. Nothing enforces that, and larger reviews may well work — but 22 is also where the agent's behavior started to change, so treat it as the top of the tested range, not a ceiling with room above it.
+The largest review tested put 22 files in scope. Nothing enforces that, and larger reviews may work, but 22 is also where the agent's behavior started to change, so treat it as the top of the tested range rather than a ceiling with room above it.
 
-- **It degrades quietly.** At 22 files the agent split the work among sub-agents on its own initiative. Sub-agents carry less context and were worse: one reported a file as supported that held four contradictions. The main agent caught it before publishing. It may not always.
-- **The failure looks like success.** Not a run that stops or errors — a confident report whose per-file coverage appears complete.
-- **22 goes further than it sounds.** Generated documentation cannot drift from its source, so it does not belong in a review; `exclude` it or set `generated: mode: skip`. Cost is not the constraint either — that run used ~310 of the 1000 AI credits allowed by default.
-- **To review more, add a workflow.** Narrow `targets` and run a second one. Extra test entries do not help: a run is one agent invocation, and every test in it shares one context.
+- **Degradation is not visible in the output.** At 22 files the agent split the work among sub-agents on its own initiative. Sub-agents carry less context and were less accurate: one reported a file as supported that contained four contradictions. The main agent corrected it before publishing, which is not guaranteed.
+- **A degraded run still looks complete.** It does not stop or error. It produces a report whose per-file coverage appears complete.
+- **Generated documentation does not belong in a review.** It cannot drift from its source, so `exclude` it or set `generated: mode: skip`. Cost is not the limiting factor: the 22-file run used about 310 of the 1000 AI credits allowed by default.
+- **To review more, add a second workflow.** Narrow `targets` and install it again. Extra test entries do not help, because a run is one agent invocation and every test in it shares the same context.
 
 ## Upstream reference
 

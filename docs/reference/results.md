@@ -94,6 +94,8 @@ A review must not report an area as verified against a source whose evidence say
 
 A test declaring `results:` writes a JSON object with a `findings` list. Any language works.
 
+The fields below are stable: new optional ones may be added, but existing ones will not change meaning. The combined `results/all.json`, including `plan`, is not stable — it is the interface between this project and the agent, and it changes freely. Read your own results file, not that one.
+
 ```json
 {
   "findings": [

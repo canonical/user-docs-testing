@@ -9,24 +9,17 @@ Mixing them up is the most common setup failure. A token that can talk to an AI 
 
 ## Choosing an engine
 
-Pick the engine when you install, and gh-aw writes and compiles the workflow for you:
+Engine selection belongs to gh-aw, not to this project. Anything gh-aw supports should work here; however, `copilot` is the only engine we've tested so far.
+
+Pick the engine when you install, and gh-aw writes and compiles the workflow:
 
 ```bash
 gh aw add canonical/user-docs-testing/workflows/docs-testing.md --engine claude
 ```
 
-The default is `copilot` with `copilot-requests: write` permission, which authenticates using the workflow's own token. That needs no secret at all, but does require your organization to have centralized Copilot billing.
+The default is `copilot` with `copilot-requests: write` permission, which authenticates using the workflow's own token and needs no secret (assuming the organization has centralized Copilot billing).
 
-If it does not, remove the `copilot-requests: write` line and add a secret instead:
-
-| Engine | `engine:` | Secret |
-| ------ | --------- | ------ |
-| GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN` — a **fine-grained** PAT with **Copilot Requests: Read-only**. Classic `ghp_...` tokens are rejected. |
-| Claude | `claude` | `ANTHROPIC_API_KEY` |
-| OpenAI Codex | `codex` | `OPENAI_API_KEY` |
-| Google Gemini | `gemini` | `GEMINI_API_KEY` |
-
-OpenAI-compatible providers such as OpenRouter also work, either via `engine: codex` with `OPENAI_BASE_URL`, or via Copilot BYOK with `COPILOT_PROVIDER_BASE_URL`. The provider hostname must be added to `network.allowed`. See the [gh-aw engines reference](https://github.github.io/gh-aw/reference/engines/).
+To use another engine, set `engine:` to `claude`, `codex`, or `gemini`, or to `codex` with a base URL for an OpenAI-compatible provider such as OpenRouter, and add the secret that engine reads. The [gh-aw engines reference](https://github.github.io/gh-aw/reference/engines/) lists the engine names, their secrets, and the base-URL settings. A provider hostname must also be added to `network.allowed`.
 
 To switch engines after installing: change `engine:` in `.github/workflows/docs-testing.md`, run `gh aw compile`, commit the regenerated `.lock.yml`, and add the matching secret.
 
@@ -59,7 +52,7 @@ checkout:
 
 `docs-testing validate` checks that the two agree, and fails if a required source has no checkout — a review that quietly loses its source verifies nothing.
 
-A fine-grained PAT has a single resource owner, so one token cannot both act as a personal `COPILOT_GITHUB_TOKEN` and read a private repository in another organization. A private organization source needs its own organization-owned secret.
+A fine-grained PAT has a single resource owner, so a token owned by one organization cannot read a private repository in another. A private organization source needs a secret owned by that organization.
 
 ## Keeping private sources safe
 

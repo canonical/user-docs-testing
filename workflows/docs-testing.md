@@ -9,15 +9,14 @@
 # `checkout:` block, which must list one entry per source of truth in that
 # config. `docs-testing validate` cross-checks the two for you.
 description: "Test documentation against the product it describes."
-emoji: "🔎"
 labels: ["docs-testing", "automation"]
 
 # The shipped reference tests, each a self-contained instruction file. Both are
 # imported, but only the tests listed in your `docs-testing.config.yml` actually
 # run — so there is normally no reason to edit this block.
 #
-# No release has been tagged yet, so these track `main`. Pin them to a tag once
-# one exists; see docs/reference/versioning.md.
+# No release has been tagged yet, so these track `main`. Installing pins them to
+# the commit they resolved to, so they do not change until you run `gh aw update`.
 imports:
   - canonical/user-docs-testing/tests/agentic/reference-review.md@main
   - canonical/user-docs-testing/tests/agentic/reference-completeness.md@main
@@ -28,7 +27,8 @@ on:
   # running this do not all start at once. `weekly on monday`, `daily`, and
   # `weekly on friday at 09:00` all work; monthly needs raw cron (`0 6 1 * *`).
   # Several entries are allowed. To run different scopes on different cadences,
-  # install this workflow twice with separate configs — see docs/reference/scheduling.md.
+  # install this workflow twice with separate configs — see
+  # https://github.com/canonical/user-docs-testing/blob/main/docs/how-to/scheduling.md.
   schedule:
     - cron: "weekly on monday"
   # SECURITY — private sources and untrusted pull requests:
@@ -44,16 +44,17 @@ on:
 permissions:
   contents: read
   # Lets the Copilot engine authenticate with the workflow's own token, so no
-  # personal access token is needed. This requires centralized Copilot billing;
-  # if your organization does not have it, remove this line and set a
-  # COPILOT_GITHUB_TOKEN secret instead. See docs/reference/engines.md.
+  # personal access token is needed. This requires centralized Copilot billing.
+  # To use a different engine instead, see
+  # https://github.com/canonical/user-docs-testing/blob/main/docs/how-to/engines.md.
   copilot-requests: write
 
 # The AI engine that performs the reviews. Pick it at install time instead of
 # editing here:  gh aw add canonical/user-docs-testing/workflows/docs-testing.md --engine claude
 # Supported: copilot | claude | codex | gemini. Each needs its own secret, except
 # copilot with the permission above. If you change this line by hand, run
-# `gh aw compile` afterwards. See docs/reference/engines.md.
+# `gh aw compile` afterwards. See
+# https://github.com/canonical/user-docs-testing/blob/main/docs/how-to/engines.md.
 engine: copilot
 
 checkout:

@@ -141,5 +141,5 @@ tests:
 #   3. Add one `checkout:` block per source in your workflow, passing
 #      `token: ${{ secrets.SOURCE_REPO_TOKEN }}` for the private ones.
 #   4. Keep private-source runs on TRUSTED events only — see
-#      ../../docs/reference/engines.md.
+#      ../../docs/how-to/engines.md.
 # ---------------------------------------------------------------------------

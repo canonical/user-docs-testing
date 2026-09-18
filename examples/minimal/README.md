@@ -1,7 +1,6 @@
-# Minimal example
+# Minimal example: one public source
 
-The smallest useful setup: one documentation tree, one product, two tests. It
-runs offline, so you can see real output before installing anything.
+The smallest useful setup: one documentation tree, one product, two tests. It runs offline, so you can see real output before installing anything.
 
 ```
 docs/reference/cli.md          the documentation under test
@@ -17,13 +16,11 @@ From this directory:
 docs-testing run
 ```
 
-(If you have not installed it: `pipx install git+https://github.com/canonical/user-docs-testing`,
-or from a clone of this repository, `PYTHONPATH=../.. python3 -m docs_testing run`.)
+(If you have not installed it: `pipx install git+https://github.com/canonical/user-docs-testing`, or from a clone of this repository, `PYTHONPATH=../.. python3 -m docs_testing run`.)
 
 ## What you should see
 
-The documentation covers `--verbose` and `--output`, but the product also has
-`--retries`. The deterministic check finds it:
+The documentation covers `--verbose` and `--output`, but the product also has `--retries`. The deterministic check finds it:
 
 ```
 WARNINGS  documentation verified, non-blocking findings reported
@@ -38,8 +35,7 @@ Sources:
 1 review(s) are run by the AI engine in CI and are not included above.
 ```
 
-Exit status is `0`: an undocumented option is worth knowing about, but it is not
-a broken claim, so by default it does not fail CI.
+Exit status is `0`: an undocumented option is worth knowing about, but it is not a broken claim, so by default it does not fail CI.
 
 ## Make it a failure instead
 
@@ -65,12 +61,8 @@ Document `--retries` in `docs/reference/cli.md` and run again:
 PASS      documentation verified, nothing to fix
 ```
 
-That is the meaningful part: `PASS` here means the check ran, the product source
-was present, and every enumerated option was found. Delete
-`sources/product/cli-surface.txt` and you get `INCOMPLETE` instead — the surface
-could not be enumerated, so the documentation was never actually verified.
+That is the meaningful part: `PASS` here means the check ran, the product source was present, and every enumerated option was found. Delete `sources/product/cli-surface.txt` and you get `INCOMPLETE` instead — the surface could not be enumerated, so the documentation was never actually verified.
 
 ## The second test
 
-`reference-review` is a review by an AI engine and needs the workflow, so it does
-not run locally. See the [README](../../README.md) to install it.
+`reference-review` is a review by an AI engine and needs the workflow, so it does not run locally. See the [README](../../README.md) to install it.
