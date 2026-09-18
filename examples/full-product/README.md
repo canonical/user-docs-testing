@@ -1,8 +1,10 @@
-# Landscape example: several sources, one private
+# Full product example: several sources, one private
 
-Landscape is implemented across four repositories, one of them private. This is its configuration, and it is here to be read rather than copied.
+A product implemented across four repositories, one of them private. This is its configuration, and it is here to be read rather than copied.
 
-The documentation it tests is not in this repository — `fetch-fixtures.sh` pulls it into a gitignored `docs/`. So that the config makes sense without it, this is the reference set it refers to and who owns each part:
+The example is Landscape, because it is a real product with this shape. Nothing in the tool is specific to it.
+
+The documentation it tests lives in the Landscape repositories, not here, so the paths in the config refer to files you will not find alongside it. This is the reference set it means, and who owns each part:
 
 | Documentation | Owner | Why |
 | ------------- | ----- | --- |

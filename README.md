@@ -108,8 +108,9 @@ The configuration is checked before any test runs, so a typo fails in seconds wi
 ## Examples
 
 - [examples/minimal](examples/minimal/) — one public source, one agentic review and one deterministic check. The deterministic half runs offline. Start here.
-- [examples/landscape](examples/landscape/) — a product spread across four repositories, one of them private, with source ownership and partial coverage.
-- [docs-testing.config.example.yml](docs-testing.config.example.yml) — every supported field, annotated, with real values.
+- [examples/full-product](examples/full-product/) — a product spread across four repositories, one of them private, with source ownership and partial coverage. Written to be read rather than copied.
+
+Every field, including the values these two do not happen to use, is in [the configuration reference](docs/reference/configuration.md).
 
 ## Optional: run the checks locally
 

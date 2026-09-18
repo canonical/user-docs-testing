@@ -12,9 +12,8 @@ What each directory in this repository contains, and which parts end up in a rep
 | `tests/agentic/` | One instruction file per shipped review. Imported by the workflow at compile time and pinned to a commit. |
 | `tests/deterministic/` | Example deterministic checks. These are illustrations to copy and adapt, not checks the workflow runs for you. |
 | `selftests/` | Contract tests for this repository, run by `.github/workflows/selftest.yml`. |
-| `examples/` | Two worked configurations. See [examples/minimal](../../examples/minimal/) and [examples/landscape](../../examples/landscape/). |
+| `examples/` | Two worked configurations. See [examples/minimal](../../examples/minimal/) and [examples/full-product](../../examples/full-product/). |
 | `docs/` | This documentation. |
-| `docs-testing.config.example.yml` | An annotated configuration showing every supported field. |
 
 ## Inside the package
 

@@ -82,6 +82,8 @@ source_map:
 | `paths` | yes | Documentation paths this entry covers. |
 | `sources` | yes | Names of the owning sources. An empty list means nothing owns it. |
 
+An area may name several owners, when one component defines the behavior and another the surface a reader sees. Findings may then cite any of them.
+
 Paths matched by no entry fall back to the test's own `sources` list. A test may set its own `source_map` to override ownership for the paths it matches; most should not need to.
 
 ## `tests`
@@ -150,17 +152,45 @@ They are **demonstrations, not checks you are expected to run**. Read them, copy
 | `exclude` | top-level `exclude` | Narrow a review's scope. |
 | `sources` | all sources | Which sources this test may use. |
 | `source_map` | top-level | Test-specific ownership. |
-| `generated` | none | `paths` plus `mode`: `skip`, `annotate`, or `deterministic-only`. |
+| `generated` | none | `paths` plus `mode`. See below. |
 | `skip_deterministically_covered` | `true` | Do not re-report what a deterministic check already found. |
 | `enabled` | `true` | Set `false` to turn a test off without deleting it. |
+
+A test's `sources` limits which sources it may consult at all. It does not decide ownership: that still comes from `source_map`.
+
+```yaml
+tests:
+  - name: reference-completeness
+    uses: reference-completeness
+    targets: "docs/reference/config/**/*.md"
+    generated:
+      paths: ["docs/reference/api/**"]
+      mode: skip
+    skip_deterministically_covered: true
+
+  - name: legacy-terminology
+    uses: reference-review
+    enabled: false
+```
+
+`generated` names documentation produced from the source, and what to do with it:
+
+| `mode` | Effect |
+| ------ | ------ |
+| `skip` | Not reviewed. Reported as `skipped-by-policy`, so it is visibly excluded rather than quietly missing. |
+| `annotate` | Reviewed, with findings labelled as concerning generated material. |
+| `deterministic-only` | Only deterministic checks may cover it; reviews leave it alone. |
 
 ## `reporting`
 
 ```yaml
 reporting:
+  mode: check-run
   fail_on_findings: true
   on_incomplete_coverage: neutral
   title: "Docs Testing"
+  labels:
+    - "docs-testing"
 ```
 
 | Field | Default | Description |
