@@ -76,11 +76,14 @@ runs:
         FAIL_ON_TOOL_ERROR: ${{ inputs.fail-on-tool-error }}
       run: |
         set -uo pipefail
+        # `shell: bash` runs with -e, which would end the step the moment the
+        # command below exits non-zero — losing the agentic review entirely for
+        # exactly the runs that most need reporting. Capture the code instead.
+        code=0
         PYTHONPATH="$DOCS_TESTING_HOME" python -m docs_testing run \
           --config "$CONFIG" \
           --sources-root "$SOURCES_ROOT" \
-          --output "$OUTPUT"
-        code=$?
+          --output "$OUTPUT" || code=$?
 
         status=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['summary']['status'])" "$OUTPUT" 2>/dev/null || echo error)
         echo "deterministic-status=$status" >> "$GITHUB_OUTPUT"
