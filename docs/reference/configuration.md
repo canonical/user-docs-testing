@@ -61,6 +61,8 @@ sources:
 
 Each source needs a matching `checkout:` block in `.github/workflows/docs-testing.md`, with `path: sources/<name>`. `docs-testing validate` fails if a required source has no checkout, because a review that silently loses its source verifies nothing.
 
+If the documentation and the product it describes live in the same repository, the source still needs its own `checkout:` block under `sources/<name>` — a second clone of the same repository. Declaring `sources/<name>` as a plain copy of the workflow's own checkout, or pointing it at the repository root, does not work: a source is only attested if it is its own checkout root, so proving which commit was actually verified requires cloning it again.
+
 ## `source_map`
 
 States once which source owns which documentation, so every test checks an area against the component that *produces* the interface rather than guessing.
