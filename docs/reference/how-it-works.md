@@ -76,6 +76,27 @@ reports a stale lock file rather than silently running old instructions.
 Step 2 running before step 3 is deliberate: it means a review cannot claim to
 have checked documentation against a source that was never there.
 
+## How much one review can cover
+
+The largest review we have tested put 22 files in scope. Nothing enforces that,
+and larger reviews may well work — but 22 is also where the agent's behavior
+started to change, so treat it as the top of the tested range, not a ceiling
+with room above it.
+
+- **It degrades quietly.** At 22 files the agent split the work among sub-agents
+  on its own initiative. Sub-agents carry less context and were worse: one
+  reported a file as supported that held four contradictions. The main agent
+  caught it before publishing. It may not always.
+- **The failure looks like success.** Not a run that stops or errors — a
+  confident report whose per-file coverage appears complete.
+- **22 goes further than it sounds.** Generated documentation cannot drift from
+  its source, so it does not belong in a review; `exclude` it or set
+  `generated: mode: skip`. Cost is not the constraint either — that run used
+  ~310 of the 1000 AI credits allowed by default.
+- **To review more, add a workflow.** Narrow `targets` and run a second one.
+  Extra test entries do not help: a run is one agent invocation, and every test
+  in it shares one context.
+
 ## Upstream reference
 
 Ours is the configuration and the checks; everything about workflow mechanics is

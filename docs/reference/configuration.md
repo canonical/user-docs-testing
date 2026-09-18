@@ -38,6 +38,11 @@ policy with `mode: skip` — that keeps it in scope and reports it as
 `skipped-by-policy`, so a reader can see it was deliberately not reviewed rather
 than quietly missing.
 
+Keeping generated pages out also keeps a review within the size we have tested,
+which is 22 files. See
+[how much one review can cover](how-it-works.md#how-much-one-review-can-cover)
+for what happens above that.
+
 ## `sources`
 
 A source is a repository holding the authoritative definition of some documented
