@@ -29,6 +29,12 @@ See [docs/reference/architecture.md](docs/reference/architecture.md).
 
 The review instructions in `tests/agentic/` are imported by installed workflows and pinned to a commit, so a change reaches users only when they run `gh aw update`. Their effect cannot be verified by the self-tests; they need a real run against a repository with known documentation defects.
 
+## Adding an agentic review
+
+`docs-testing.config.yml` does not support naming your own project-specific agentic review: `uses:` only accepts the shipped set.
+
+If you want a new agentic review to exist, open an issue or a PR.
+
 ## Changing the workflow
 
 `workflows/docs-testing.md` is the installable workflow. If you edit it, run `gh aw compile` in a repository that installs it, not in this one — compiling here leaves stray artifacts.

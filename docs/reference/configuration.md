@@ -122,7 +122,7 @@ tests:
       - "pip install -r scripts/requirements.txt"
 ```
 
-With `results`, the file is the report — see [the results schema](results.md#extending-with-your-own-check). Without it, the command's exit status is the result: zero passes, non-zero becomes one finding carrying the command's output. That is enough for an existing pass/fail linter.
+With `results`, the file is the report — see [the results schema](results.md#reporting-findings-from-your-own-check). Without it, the command's exit status is the result: zero passes, non-zero becomes one finding carrying the command's output. That is enough for an existing pass/fail linter. Step by step: [how to add your own check](../how-to/custom-checks.md).
 
 Commands run **without a shell**, so configuration cannot inject one. A command containing `|`, `&&`, `;`, `>` or similar is rejected with an explanation; put the pipeline in a script and call the script.
 

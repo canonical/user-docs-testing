@@ -2,22 +2,23 @@
 
 A GitHub Actions workflow that tests documentation against the product it describes and reports the result as a Check Run.
 
-It is a thin wrapper around [gh-aw](https://github.github.io/gh-aw/) that runs documentation checks defined in one configuration file. Two agentic reviews ship with it. You can also run deterministic checks of your own — any command, in any language, as long as it reports its findings in the [results schema](docs/reference/results.md#extending-with-your-own-check) — and both kinds appear in the same report.
-
-> **Status: pre-release.** No version has been tagged. Installation tracks `main`, but `gh aw add` pins the exact commit, so your runs do not change until you update. Upstream may change in breaking ways between updates.
+This project is a wrapper around [gh-aw](https://github.github.io/gh-aw/) that runs documentation checks defined in a project-specific configuration file. It ships with pre-made agentic reviews, and you can also provide your own deterministic checks (any language). Results are all reported together.
 
 ## What it checks
 
-Deterministic checks are commands you supply. They run first, and anything they report is excluded from the reviews that follow.
+There are two kinds of checks this documentation workflow can use:
 
-The two reviews below ship with the workflow and are performed by an AI engine:
+- **Agentic reviews**: Performed by an AI engine. Agentic reviews are provided in this project, but you choose which to run in your documentation.
+- **Deterministic checks**: Project-specific checks you supply. These aren't performed by an AI engine, but See [how to add your own deterministic check](docs/how-to/custom-checks.md).
 
-| Review | Question it answers |
-| ------ | ------------------- |
+| Shipped review | Question it answers |
+| --------------- | -------------------- |
 | `reference-review` | Does the documentation state something the product contradicts? |
 | `reference-completeness` | Does product surface exist that the documentation never mentions? |
 
-Every finding must cite the product source that proves it. A review that cannot reach its source reports the affected documentation as **unverified**, not as passing.
+Any custom deterministic checks you include run first, and anything they report is excluded from the reviews that follow.
+
+All findings cite the product source that proves it. If an agentic review can't reach its source, it reports the affected documentation as **unverified**, not as passing.
 
 ## Install
 
@@ -33,9 +34,13 @@ Then, in your documentation repository:
 gh aw add canonical/user-docs-testing/workflows/docs-testing.md
 ```
 
-That adds `.github/workflows/docs-testing.md`, compiles it, and records where it came from so `gh aw update docs-testing` can pick up later changes.
+That adds `.github/workflows/docs-testing.md`, compiles it, and records where it came from. Installation tracks `main` and records the exact commit it resolved to. You can update your project later with:
 
-The default engine is `copilot`. To choose another at install time:
+```bash
+gh aw update docs-testing
+```
+
+The default engine is `copilot`. To use another, specify that at install time:
 
 ```bash
 gh aw add canonical/user-docs-testing/workflows/docs-testing.md --engine claude
@@ -75,7 +80,7 @@ gh aw compile
 git add .github/workflows/ docs-testing.config.yml && git commit
 ```
 
-GitHub Actions cannot run Markdown, so `gh aw compile` generates the `.lock.yml` that Actions actually executes. It has to be committed next to its `.md`.
+Because GitHub Actions can't run Markdown, `gh aw compile` generates the `.lock.yml` that Actions actually executes. It has to be committed next to its `.md`, although users won't use or edit this file manually.
 
 ## Update
 
@@ -83,15 +88,15 @@ GitHub Actions cannot run Markdown, so `gh aw compile` generates the `.lock.yml`
 gh aw update docs-testing
 ```
 
-This re-fetches the workflow and its imports at a newer commit, re-pins actions, and regenerates the `.lock.yml`. Review the diff, then commit it.
+This re-fetches the workflow and its imports at a newer commit, re-pins actions, and regenerates the `.lock.yml`. 
 
-Your `checkout:` blocks are in the same file gh-aw rewrites, so an upstream change to the workflow has to be reconciled with your edits. `docs-testing.config.yml` is never affected: it is read at run time, not compiled.
+gh-aw auto-merges the update with your local edits, including your `checkout:` blocks, rather than overwriting the file. `docs-testing.config.yml` isn't touched in an update.
 
-Check the result with `docs-testing validate` and one manual run before relying on it. To undo an update, revert the commit — the workflow, its lock file, and every import are pinned, so nothing else moves.
+Validate your update with `docs-testing validate` to catch any `checkout:` blocks the auto-merge may have dropped or moved. It's recommended to also manually review the changes when you update.
 
-## Reading the result
+## Interpreting the result
 
-Five outcomes:
+Your report can have the following outcomes:
 
 | Result | Meaning | Check Run |
 | ------ | ------- | --------- |
@@ -101,16 +106,14 @@ Five outcomes:
 | **Fail** | An actionable documentation problem was found. | `failure` |
 | **Tool error** | The tool itself failed; the results mean nothing. | `action_required` |
 
-The last two rows are the reason the outcomes are kept separate. A crashed check, an unreadable results file, or a private source that failed to clone won't report that your documentation passed. Full detail in [the results reference](docs/reference/results.md).
-
-The configuration is checked before any test runs, so a typo fails in seconds with a message naming the field and the fix.
+A crashed check, an unreadable results file, or a private source that failed to clone won't report that your documentation passed. Full detail in [the results reference](docs/reference/results.md).
 
 ## Examples
 
-- [examples/minimal](examples/minimal/) — one public source, one agentic review and one deterministic check. The deterministic half runs offline. Start here.
-- [examples/full-product](examples/full-product/) — a product spread across four repositories, one of them private, with source ownership and partial coverage. Written to be read rather than copied.
+- [examples/minimal](examples/minimal/): A minimal example you can get started with. It includes one public source, one agentic review, and one deterministic check.
+- [examples/full-product](examples/full-product/): A full example product config spread across four repositories, one of them private, with source ownership and partial coverage. This example is intended to be read and referenced.
 
-Every field, including the values these two do not happen to use, is in [the configuration reference](docs/reference/configuration.md).
+See the [full configuration reference](docs/reference/configuration.md).
 
 ## Optional: run the checks locally
 
@@ -124,10 +127,11 @@ docs-testing run        # run the checks that need no AI engine
 docs-testing list       # what checks are available?
 ```
 
-## Going further
+## Further reading
 
 **How-to guides**
 
+- [How to add your own check](docs/how-to/custom-checks.md) — exit status or structured findings, and what runs where.
 - [How to set up engines and access private sources](docs/how-to/engines.md) — which credential does what, and how to keep a private source safe.
 - [How to schedule runs](docs/how-to/scheduling.md) — cadence, manual runs, and running different scopes at different frequencies.
 

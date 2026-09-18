@@ -90,9 +90,9 @@ A review must not report an area as verified against a source whose evidence say
 
 `plan` is the validated, normalized configuration: which reviews to run, with what scope, which source owns what, and how to conclude. The agent uses it instead of re-reading the YAML, so configuration is interpreted in exactly one place.
 
-## Extending with your own check
+## Reporting findings from your own check
 
-A test declaring `results:` writes a JSON object with a `findings` list. Any language works.
+A test declaring `results:` writes a JSON object with a `findings` list. Any language works. A test with no `results:` reports through its exit status instead and writes nothing; see [how to add your own check](../how-to/custom-checks.md).
 
 The fields below are stable: new optional ones may be added, but existing ones will not change meaning. The combined `results/all.json`, including `plan`, is not stable — it is the interface between this project and the agent, and it changes freely. Read your own results file, not that one.
 
