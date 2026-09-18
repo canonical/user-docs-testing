@@ -1,178 +1,148 @@
-# user-docs-testing
+# User documentation testing
 
-> This project is a work-in-progress.
+A GitHub Actions workflow that tests documentation against the product it describes and reports the result as a Check Run.
 
-A tool for testing documentation. It reports its findings as a GitHub Check Run.
+This project is a wrapper around [gh-aw](https://github.github.io/gh-aw/) that runs documentation checks defined in a project-specific configuration file. It ships with pre-made agentic reviews, and you can also provide your own deterministic checks (any language). Results are all reported together.
 
-## Tests
+## What it checks
 
-Tests are declared in a `docs-testing.config.yml` in your repo. Two kinds:
+There are two kinds of checks this documentation workflow can use:
 
-- Agentic tests — a review by an AI engine, run through
-  [GitHub Agentic Workflows](https://github.github.com/gh-aw/) (gh-aw). Each points
-  at an instruction file describing what to check. The tool ships a set of these
-  under [tests/agentic/](tests/agentic/). Two ship for reference docs:
-  `reference-review`, the general accuracy check, and `reference-completeness`,
-  which finds interface that exists in the source but is not documented.
-- Deterministic tests — a command that emits findings in a standard JSON schema
-  (see [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md)). Two ship under
-  [tests/deterministic/](tests/deterministic/): `source_manifest.py` (records
-  which sources were actually checked out, and at which commit) and
-  `undocumented_surface.py` (the precise counterpart to `reference-completeness`
-  — diffs a machine-readable interface manifest, e.g. OpenAPI/`--help`/JSON
-  Schema, against the docs). Most deterministic checks are specific to a project,
-  so you'll usually add your own.
+- **Agentic reviews**: Performed by an AI engine. Agentic reviews are provided in this project, but you choose which to run in your documentation.
+- **Deterministic checks**: Project-specific checks you supply. These aren't performed by an AI engine, but See [how to add your own deterministic check](docs/how-to/custom-checks.md).
 
-Choose which tests to run, and point them at your docs, in your config.
+| Shipped review | Question it answers |
+| --------------- | -------------------- |
+| `reference-review` | Does the documentation state something the product contradicts? |
+| `reference-completeness` | Does product surface exist that the documentation never mentions? |
 
-## Sources and coverage
+Any custom deterministic checks you include run first, and anything they report is excluded from the reviews that follow.
 
-Products are often implemented across several repositories, so the authoritative
-source for a documented claim depends on which component owns the behavior. The
-config models this:
+All findings cite the product source that proves it. If an agentic review can't reach its source, it reports the affected documentation as **unverified**, not as passing.
 
-- Each entry under `sources:` names a repository a test compares docs against.
-  Mark it `required: true` (default) or `required: false`. A required source that
-  can't be read makes the reviews depending on it **incomplete** — those files are
-  reported as blocked, never as passing. An optional source can be absent, and the
-  areas that need it are reported as unsupported.
-- A top-level `source_map:` states **once** which source owns which documentation
-  paths, so each area is checked against the *producer* of an interface (other
-  sources only corroborate). Every reference test reads the same map; a test adds
-  its own `source_map` only when it genuinely needs different ownership.
-- Reviews are not reduced to one repo-wide pass/fail. Each area is classified with
-  the coverage vocabulary in [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md)
-  (reviewed-and-supported, reviewed-with-conflicting-evidence, skipped-by-policy,
-  unsupported-by-configured-sources, blocked-required-source-unavailable).
+## Install
 
-## Three outcomes, never two
+You need the [gh CLI](https://cli.github.com/) and the [gh-aw extension](https://github.com/githubnext/gh-aw):
 
-The report distinguishes three things that must not collapse into one:
+```bash
+gh extension install githubnext/gh-aw
+```
 
-| Outcome                                     | `status`     | Check Run  |
-| ------------------------------------------- | ------------ | ---------- |
-| We checked it and it appears correct        | `pass`       | `success`  |
-| We found a problem                          | `fail`       | `failure`  |
-| We could not establish whether it is correct | `incomplete` | `neutral`  |
+Then, in your documentation repository:
 
-If a required source is unavailable, the material it owns is *not verified*, so
-the run is `incomplete` — it must never look like a clean pass. Set
-`reporting.on_incomplete_coverage: action_required` if you want that to block
-merges. Details in [RESULTS-SCHEMA.md](RESULTS-SCHEMA.md).
+```bash
+gh aw add canonical/user-docs-testing/workflows/docs-testing.md
+```
 
-Private sources need care: never expose a private source token to an untrusted
-fork (see the SECURITY note in [workflows/docs-testing.md](workflows/docs-testing.md)).
+That adds `.github/workflows/docs-testing.md`, compiles it, and records where it came from. Installation tracks `main` and records the exact commit it resolved to. You can update your project later with:
+
+```bash
+gh aw update docs-testing
+```
+
+The default engine is `copilot`. To use another, specify that at install time:
+
+```bash
+gh aw add canonical/user-docs-testing/workflows/docs-testing.md --engine claude
+```
+
+Engine selection comes from upstream gh-aw, see [how to set up engines and access private sources](docs/how-to/engines.md).
+
+## Configure
+
+Create `docs-testing.config.yml` in the root of the repository:
+
+```yaml
+version: 1
+
+targets: "docs/reference/**/*.md"
+
+sources:
+  - name: product
+    repo: my-org/my-product
+
+tests:
+  - reference-review
+```
+
+Then tell the workflow to check that product out. In `.github/workflows/docs-testing.md`, under `checkout:`:
+
+```yaml
+  - repository: my-org/my-product
+    ref: main
+    path: sources/product
+```
+
+The `path` must be `sources/<name>`, matching the source's `name`. Recompile and commit:
+
+```bash
+gh aw compile
+git add .github/workflows/ docs-testing.config.yml && git commit
+```
+
+Because GitHub Actions can't run Markdown, `gh aw compile` generates the `.lock.yml` that Actions actually executes. It has to be committed next to its `.md`, although users won't use or edit this file manually.
+
+## Update
+
+```bash
+gh aw update docs-testing
+```
+
+This re-fetches the workflow and its imports at a newer commit, re-pins actions, and regenerates the `.lock.yml`. 
+
+gh-aw auto-merges the update with your local edits, including your `checkout:` blocks, rather than overwriting the file. `docs-testing.config.yml` isn't touched in an update.
+
+Validate your update with `docs-testing validate` to catch any `checkout:` blocks the auto-merge may have dropped or moved. It's recommended to also manually review the changes when you update.
+
+## Interpreting the result
+
+Your report can have the following outcomes:
+
+| Result | Meaning | Check Run |
+| ------ | ------- | --------- |
+| **Pass** | Verified; nothing to fix. | `success` |
+| **Warnings** | Verified; non-blocking findings reported. | `neutral` |
+| **Incomplete** | Part of the scope could not be verified. | `neutral`, or `action_required` |
+| **Fail** | An actionable documentation problem was found. | `failure` |
+| **Tool error** | The tool itself failed; the results mean nothing. | `action_required` |
+
+A crashed check, an unreadable results file, or a private source that failed to clone won't report that your documentation passed. Full detail in [the results reference](docs/reference/results.md).
 
 ## Examples
 
-[examples/landscape/](examples/landscape/) is the proving ground: a worked,
-multi-repository configuration (public + private sources, ownership map, partial
-coverage) for a real product. Run it from
-[.github/workflows/landscape-reference-review.md](.github/workflows/landscape-reference-review.md).
+- [examples/minimal](examples/minimal/): A minimal example you can get started with. It includes one public source, one agentic review, and one deterministic check.
+- [examples/full-product](examples/full-product/): A full example product config spread across four repositories, one of them private, with source ownership and partial coverage. This example is intended to be read and referenced.
 
+See the [full configuration reference](docs/reference/configuration.md).
 
+## Optional: run the checks locally
 
-## Usage
-
-1. Copy [workflows/docs-testing.md](workflows/docs-testing.md) into your repo under
-   `.github/workflows/`.
-2. In its `imports:` block, list the shipped agentic tests you want. They're
-   fetched from this (public) repo when you compile, so your runs don't need
-   access to it.
-3. Add a `docs-testing.config.yml` (see
-   [docs-testing.config.example.yml](docs-testing.config.example.yml)) with each
-   test's targets, sources, and reporting.
-4. Compile it — see below — and commit the generated `.lock.yml`.
-
-## Compiling
-
-GitHub Actions cannot run Markdown. `gh aw compile` turns each
-`.github/workflows/*.md` into a `.lock.yml`, and **that** is what Actions
-executes. Commit the `.lock.yml` next to its `.md`; a workflow without one does
-not appear in the Actions tab at all.
-
-Install the [gh CLI](https://cli.github.com/) and the
-[gh-aw extension](https://github.com/githubnext/gh-aw):
+CI runs all of this. Local runs are for a faster loop while writing your configuration.
 
 ```bash
-gh extension install githubnext/gh-aw   # once
-gh aw compile                           # in your repo, after any workflow change
-git add .github/workflows/*.lock.yml && git commit -m "chore: compile workflows"
+pipx install git+https://github.com/canonical/user-docs-testing
+
+docs-testing validate   # is my configuration correct?
+docs-testing run        # run the checks that need no AI engine
+docs-testing list       # what checks are available?
 ```
 
-Recompile whenever you change the workflow `.md`, your `imports:`, or want to
-pick up newer shipped tests. If a lock file drifts out of sync with its source,
-the workflow detects it at run time and reports a stale lock file, so you are
-told rather than silently running old instructions.
+## Further reading
 
-### Staying current
+**How-to guides**
 
-`imports:` are pinned at compile time, which is what lets a run work without
-network access to this repo. What gets pinned depends on the ref you name:
+- [How to add your own check](docs/how-to/custom-checks.md) — exit status or structured findings, and what runs where.
+- [How to set up engines and access private sources](docs/how-to/engines.md) — which credential does what, and how to keep a private source safe.
+- [How to schedule runs](docs/how-to/scheduling.md) — cadence, manual runs, and running different scopes at different frequencies.
 
-| `imports:` ref | On recompile |
-| -------------- | ------------------------------------------- |
-| `@main`        | picks up the current tip of `main`          |
-| `@v1` (tag)    | stays on that tag until you change it       |
-| `@<sha>`       | frozen                                       |
+**Reference**
 
-Most consumers should track a tag or `@main` and recompile periodically.
-`gh aw update` does this for you: it fetches the latest version of each
-workflow, merges it with your local edits, and recompiles.
+- [Configuration](docs/reference/configuration.md) — every field, including source ownership, generated documentation, and custom checks.
+- [Results](docs/reference/results.md) — outcomes, coverage, and the schema for writing your own check.
+- [Architecture](docs/reference/architecture.md) — what each directory in this repository contains.
 
-Upstream reference: [gh-aw documentation](https://github.github.io/gh-aw/),
-[CLI commands](https://github.github.io/gh-aw/setup/cli/),
-[imports](https://github.github.io/gh-aw/reference/imports/).
+**Explanation**
 
-## Engines and tokens
+- [How it works](docs/explanation/how-it-works.md) — the lock file, what compiles when, what happens during a run, and how much one review can cover.
 
-Two independent tokens can be involved in a run. They solve different problems
-and are configured separately:
-
-- **Engine token** — how the AI agent (the engine that runs agentic tests)
-  authenticates. Depends on the `engine:` you set in
-  [workflows/docs-testing.md](workflows/docs-testing.md).
-- **Source token** — how `actions/checkout` reads a *private* source-of-truth
-  repo declared in your `docs-testing.config.yml`. Only needed for private
-  sources; public sources need none. See "Private sources" below.
-
-### Choosing an engine
-
-The workflow ships with `engine: copilot`, but the engine is not fixed. Set
-`engine:` in the workflow frontmatter to any provider gh-aw supports, then store
-the matching secret in your repository (or organization):
-
-| Engine                    | `engine:`  | Secret                                                                             |
-| ------------------------- | ---------- | ---------------------------------------------------------------------------------- |
-| GitHub Copilot (default)  | `copilot`  | `COPILOT_GITHUB_TOKEN` — a **fine-grained** PAT with **Copilot Requests: Read-only** (classic `ghp_...` tokens are rejected) |
-| Claude (Anthropic)        | `claude`   | `ANTHROPIC_API_KEY`                                                                |
-| OpenAI Codex              | `codex`    | `OPENAI_API_KEY`                                                                   |
-| Google Gemini             | `gemini`   | `GEMINI_API_KEY`                                                                   |
-
-OpenAI-compatible providers such as OpenRouter also work — either via
-`engine: codex` with `OPENAI_BASE_URL` set to the provider endpoint, or via
-Copilot BYOK with `COPILOT_PROVIDER_BASE_URL`. The provider hostname must be
-added to `network.allowed`. See the
-[gh-aw engines reference](https://github.github.com/gh-aw/reference/engines/) for
-details.
-
-### Switching engines
-
-1. Change the `engine:` line in [workflows/docs-testing.md](workflows/docs-testing.md).
-2. Run `gh aw compile`.
-3. Commit the regenerated `.lock.yml` (it must stay in sync with the source).
-4. Add the corresponding secret from the table above.
-
-### Private sources
-
-A source-of-truth repo is checked out separately from the engine, and a private
-one needs its own read token — *not* the engine token. In
-`docs-testing.config.yml`, a source declares `auth: secret:NAME`, and the
-matching `checkout` block in the workflow supplies `token: ${{ secrets.NAME }}`.
-
-Because a fine-grained PAT has a single resource owner, a personal
-`COPILOT_GITHUB_TOKEN` cannot also read a private repo in another org. A private
-org source therefore needs a *second*, org-owned secret with **Contents: Read**,
-separate from the engine token. You must have access to the private repo, and the
-org must permit fine-grained PATs (which may require admin approval / SSO
-authorization).
+To work on this project itself, see [CONTRIBUTING.md](CONTRIBUTING.md).

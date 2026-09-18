@@ -1,0 +1,72 @@
+# Example: a full product, Landscape, across four repositories
+# See README.md in this folder
+
+version: 1
+
+targets: "docs/reference/**/*.md"
+
+exclude:
+  - "docs/reference/release-notes/**"
+  - "docs/reference/known-issues.md"
+  - "docs/reference/_includes/**"
+
+sources:
+  - name: landscape-client
+    repo: canonical/landscape-client
+    ref: main
+    required: true
+
+  - name: landscape-server
+    repo: canonical/landscape-server
+    ref: main
+    auth: secret:SOURCE_REPO_TOKEN
+    required: true
+
+  - name: landscape-server-operator
+    repo: canonical/landscape-server-operator
+    ref: main
+    required: false
+
+  - name: landscape-ui
+    repo: canonical/landscape-ui
+    ref: main
+    required: false
+
+source_map:
+  - area: "Server configuration (service.conf, LANDSCAPE_* env vars)"
+    paths: ["docs/reference/config/**"]
+    sources: [landscape-server]
+
+  - area: "Landscape Server CLI (lsctl and friends)"
+    paths: ["docs/reference/lsctl.md"]
+    sources: [landscape-server]
+
+  - area: "Database reference (schema, tables, migrations)"
+    paths: ["docs/reference/database.md"]
+    sources: [landscape-server]
+
+  - area: "Server services, processes, and logs"
+    paths:
+      - "docs/reference/logs.md"
+      - "docs/reference/networking/**"
+    sources: [landscape-server]
+
+  - area: "Server charm options and relations"
+    paths: ["docs/reference/charm/**"]
+    sources: [landscape-server-operator]
+
+  - area: "Web-portal terminology and domain concepts"
+    paths: ["docs/reference/terms/**"]
+    sources: [landscape-server, landscape-ui]
+
+  - area: "Supported versions, PPAs, and package policy"
+    paths: ["docs/reference/supported-versions-and-ppas.md"]
+    sources: []
+
+reporting:
+  fail_on_findings: true
+  on_incomplete_coverage: neutral
+  title: "Landscape docs testing"
+
+tests:
+  - reference-review

@@ -106,7 +106,7 @@ A source directory under `sources/<name>/` may be missing or empty.
 Contribute your findings to the single check run produced by the workflow.
 
 Classify each in-scope area into exactly one coverage state (see
-[RESULTS-SCHEMA.md](../../RESULTS-SCHEMA.md)); for this test they mean:
+[the results schema](../../docs/reference/results.md)); for this test they mean:
 
 - **reviewed-and-supported** — the enumerated surface for the area is fully documented.
 - **reviewed-with-conflicting-evidence** — the source exposes user-facing elements
@@ -115,15 +115,9 @@ Classify each in-scope area into exactly one coverage state (see
 - **unsupported-by-configured-sources** — no configured source can enumerate it.
 - **blocked-required-source-unavailable** — a required owning source was unavailable.
 
-Then report:
+Then report. The workflow, not this test, chooses the check run conclusion; your
+job is to classify coverage and to give every finding a `severity`.
 
-- `failure` if you found at least one undocumented element and
-  `reporting.fail_on_findings` is true.
-- Otherwise `reporting.on_incomplete_coverage` (default `neutral`) if any area is
-  blocked or unsupported — never `success` for an area whose surface you could
-  not enumerate.
-- `success` only if every in-scope area is reviewed-and-supported or
-  skipped-by-policy.
 - For each finding include: the undocumented source element (name plus
   `sources/<name>/<path>` or symbol), the area it belongs to, and a one-line note.
 - Use `severity: warning` for undocumented surface — it is a coverage gap, not a
@@ -131,6 +125,14 @@ Then report:
   blocks a documented workflow.
 - Group findings by area, and briefly note the surface you enumerated so a reader
   can gauge how much was checked. List blocked / unsupported areas separately.
+- Summarize findings in a table with short cells (severity, area, one-line
+  summary), and put the evidence under it as a list. Keep URLs, pipes and line
+  breaks out of cells: a sanitized value inside a cell breaks the row and takes
+  the table with it. Never paste a URL as evidence — describe its scheme, host
+  and path in words, outside backticks.
+- Take your scope from `plan.agentic_tests[].files`, the already-expanded file
+  list, and give every file on it a coverage state. If you cannot reach them all,
+  say which ones and why; never leave a file out of the report entirely.
 
 ### Handling private sources safely
 

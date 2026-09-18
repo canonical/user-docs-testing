@@ -39,9 +39,20 @@ impression.** Before reviewing anything:
 
 ## Procedure
 
-For each in-scope file (from `targets` minus `exclude`, honouring
-`generated.mode`: `skip` and `deterministic-only` mean do not review, `annotate`
-means review but label findings as generated), work claim by claim:
+Your scope is `plan.agentic_tests[].files` in `results/all.json`: the in-scope
+files, already expanded from `targets` minus `exclude`. Use that list rather than
+expanding the globs yourself, and work through it in order, honoring
+`generated.mode` (`skip` and `deterministic-only` mean do not review, `annotate`
+means review but label findings as generated).
+
+Every file on that list must end with a coverage state. If you cannot review them
+all, stop and report the rest as `blocked-required-source-unavailable` only when a
+source is genuinely missing; otherwise say plainly that they were not reached and
+why. Silently omitting a file is the one outcome that must never happen: it is
+indistinguishable from a clean review, and it is the failure this whole report
+exists to prevent.
+
+For each file you do review, work claim by claim:
 
 1. **State the claim.** Identify a specific, checkable assertion — a default, a
    flag, a path, an endpoint, a name, a limit, a described behavior. Skip prose
@@ -61,16 +72,27 @@ means review but label findings as generated), work claim by claim:
      form field does not prove a backend default, a client constant does not
      prove server behavior;
    - a test fixture, when the production schema or parser says otherwise;
-   - a documentation example, which is not an implementation.
+   - a documentation example, which is not an implementation;
+   - a docstring, comment or sample config inside the owning source, when the
+     executable value says otherwise. A source can be stale about itself.
 
    When the owning source is available, it outranks all of these. When two
    *owning* sources disagree, report the cross-source disagreement rather than
    picking a side.
-6. **Check version scope.** Each source is checked out at one `ref`, while docs
+6. **Report a source that contradicts itself.** When a docstring, comment or
+   sample config in the owning source disagrees with that source's executable
+   value, judge the documentation against the executable value. If the
+   documentation matches it, the documentation is correct: do not report it as
+   drift, because a finding tells a writer to change a line, and this line is
+   already right. Report the source's internal contradiction instead, as a
+   `warning` against the source file, naming both values and saying plainly that
+   the documentation under review needs no change. Someone should fix the
+   source, so the observation must not be lost — it is simply not drift.
+7. **Check version scope.** Each source is checked out at one `ref`, while docs
    often cover several versions ("since 25.10", "deprecated in 26.10"). A claim
    scoped to a different version than the source `ref` is not drift — note the
    version skew instead.
-7. **Prefer silence.** If after the above you are not confident, do not flag. A
+8. **Prefer silence.** If after the above you are not confident, do not flag. A
    false positive costs a writer more than a missed one.
 
 If `skip_deterministically_covered` is true, read `results/all.json` first and do
@@ -92,18 +114,24 @@ and `message`).
 Contribute to the single check run the workflow produces.
 
 Classify every in-scope file (or claim category) into exactly one coverage state
-from [RESULTS-SCHEMA.md](../../RESULTS-SCHEMA.md): `reviewed-and-supported`,
+from [the results schema](../../docs/reference/results.md): `reviewed-and-supported`,
 `reviewed-with-conflicting-evidence`, `skipped-by-policy`,
 `unsupported-by-configured-sources`, `blocked-required-source-unavailable`.
 
-Choose the conclusion in this order:
+Give every finding a `severity`. The workflow, not this test, chooses the check
+run conclusion; severity is how your findings are weighed when it does.
 
-1. `failure` — at least one finding, and `reporting.fail_on_findings` is true.
-2. `reporting.on_incomplete_coverage` (default `neutral`) — no findings, but at
-   least one area is blocked or unsupported. Never `success` here: nothing was
-   proven wrong, but the review is not complete.
-3. `success` — every in-scope area is `reviewed-and-supported` or
-   `skipped-by-policy`, with no findings.
+- `error` — a reader who follows the documentation gets a wrong result: a wrong
+  default, limit or value they would act on; a flag, field or endpoint that no
+  longer exists or has been renamed; syntax that would fail.
+- `warning` — the claim misleads without breaking anything: a stale or imprecise
+  description, a missing caveat, a cosmetic difference, or a value that differs
+  only in a way a reader would not act on.
+
+Judge the consequence to someone following the text literally, not how wrong the
+text is. When a finding sits between the two, choose `warning`. A blocked build
+over a cosmetic difference teaches a team to switch the check off, which costs
+far more than the finding was worth.
 
 Each finding must give a technical writer everything needed to act:
 
@@ -121,13 +149,30 @@ you actually consulted to reach that conclusion. "Reviewed" with nothing cited i
 indistinguishable from not having looked, so report such an area as blocked
 instead.
 
-Group findings by file. List blocked and unsupported areas **separately and
-explicitly**, so a reader can see exactly which material was not verified.
+Group findings by file. Summarize them in a table — one row per finding, with
+short cells: severity, line, and a one-line summary of the claim. Keep cells free
+of URLs, pipes and line breaks; a sanitized URL inside a cell breaks the row and
+takes the whole table with it.
 
-Report output is sanitised before publication, and any URL that is not HTTPS is
-removed. A finding about a non-HTTPS URL therefore loses the evidence it depends
-on. Describe such a value instead of pasting it — name the scheme, host and path
-in words — so the finding survives intact.
+Put the evidence under the table as a list, one entry per finding: the documented
+claim, what the owning source says, the source path and symbol, and why it
+matters. Detail belongs here, where a mangled value costs one line instead of the
+table.
+
+List blocked and unsupported areas **separately and explicitly**, so a reader can
+see exactly which material was not verified.
+
+Report output is sanitized before publication: any URL that is not HTTPS, or
+whose domain is not allowlisted, is replaced with `(redacted)`. That destroys the
+evidence a URL-valued finding rests on, and a half-removed URL inside backticks
+leaves the report malformed.
+
+So **never paste a URL as evidence**. Describe it — name the scheme, host and
+path in words, as in "plain HTTP on example.com, path /ping" — and leave it out
+of backticks. This applies to the documented value and the source value alike,
+whenever either is a URL. It also applies to quoted source: when the line you
+want to quote contains a URL, do not reproduce it verbatim — quote the part that
+matters and describe the URL. A described value survives; a pasted one may not.
 
 ### Private sources
 
