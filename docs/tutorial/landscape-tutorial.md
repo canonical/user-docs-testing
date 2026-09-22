@@ -1,0 +1,263 @@
+---
+myst:
+  html_meta:
+    description: "Complete a hands-on tutorial for Landscape. Install Server, configure it, register a client, and run scripts in about 45 minutes."
+---
+
+(getting-started-with-landscape)=
+# Getting started with Landscape
+
+> See also: {ref}`what-is-landscape`
+
+This tutorial guides you through the process of installing Landscape Server (self-hosted) on a Multipass virtual machine, configuring it, registering a client instance to Landscape, and running a script on your client instance. At the end, you'll also be guided through how to teardown your environment.
+
+Note that this tutorial guides you through creating a *test* environment for learning and experimentation. It's not intended for real, production deployments. If you're setting up a production deployment, see {ref}`how-to-guides-landscape-installation-and-set-up-index`.
+
+Completing this tutorial should take approximately 45 minutes.
+
+## Prerequisites
+
+There's a few things you'll need before starting this tutorial.
+
+### Hardware
+
+You'll need a workstation with at least the following requirements:
+
+- 25G of disk space
+- 8GB RAM of memory
+
+You'll make two Multipass VMs in this tutorial: one for Landscape Server and one for Landscape Client. You'll use 20G of disk space and 6G RAM for Landscape Server, and 5G disk space and 2G RAM for Landscape Client. 
+
+Your workstation will be called your "host machine" throughout this tutorial.
+
+### Multipass
+
+For this tutorial, Multipass needs to be installed on your host machine. To install Multipass, run the following in your terminal:
+
+```bash
+sudo snap install multipass
+```
+
+If you want to learn more about Multipass, see their [installation guide](https://documentation.ubuntu.com/multipass/stable/how-to-guides/install-multipass/) and [full documentation](https://documentation.ubuntu.com/multipass/).
+
+### Ubuntu Pro token
+
+You'll need an [Ubuntu Pro token](https://ubuntu.com/pro). Ubuntu Pro is free for up to 5 machines, and you can use the free version for this tutorial.
+
+If you already have an Ubuntu Pro account, you can copy your token from your [Ubuntu Pro dashboard](https://ubuntu.com/pro/dashboard).
+
+If you don't have an Ubuntu Pro account, first sign up for a [free personal Ubuntu Pro account](https://ubuntu.com/pro), then copy your token from your [Ubuntu Pro dashboard](https://ubuntu.com/pro/dashboard).
+
+## Create the virtual machines
+
+Now, let's create the Multipass virtual machines (VMs). From the command line, run:
+
+```bash
+multipass launch noble --cpus 2 --memory 6G --disk 20G --name tutorial-landscape-server-noble
+multipass launch noble --cpus 1 --memory 2G --disk 5G --name tutorial-landscape-client-noble
+```
+
+This step will take a few minutes to complete, but you'll receive progress updates in the command line. These commands create two VMs total: one for your Landscape Server and one for Landscape Client. Both VMs will run on Ubuntu 24.04 Noble Numbat.
+
+You'll need the IP address of the `tutorial-landscape-server-noble` VM later, so let's get it now. Run the following on your host machine:
+
+```bash
+multipass info tutorial-landscape-server-noble
+```
+
+Copy the IP address from the output, saving it somewhere you can access later.
+
+The full output should be similar to the details below.
+
+```text
+Name:           tutorial-landscape-server-noble
+State:          Running
+Snapshots:      0
+IPv4:           10.253.187.38
+Release:        Ubuntu 24.04.1 LTS
+Image hash:     28d2f9df3ac0 (Ubuntu 24.04 LTS)
+CPU(s):         2
+Load:           0.05 0.10 0.04
+Disk usage:     1.8GiB out of 19.3GiB
+Memory usage:   410.0MiB out of 3.8GiB
+Mounts:         --
+```
+
+In this example output, the IP address for the `tutorial-landscape-server-noble` VM is `10.253.187.38`. We'll use that IP address throughout this tutorial, but the commands you run later should use the IP address that you just copied and saved.
+
+## Install Landscape Server
+
+Now, we're ready to install Landscape Server! We'll install Landscape Server on the `tutorial-landscape-server-noble` VM. To do this, open a shell on that VM:
+
+```bash
+multipass shell tutorial-landscape-server-noble
+```
+
+After running that command, the prompt should change to `ubuntu@tutorial-landscape-server-noble`. This means you're now in your `tutorial-landscape-server-noble` VM, and any commands will be run on that VM instead of your host machine.
+
+Now add the `landscape/self-hosted-24.04` PPA to get access to the Landscape Server packages by running this command:
+
+```bash
+sudo add-apt-repository -y ppa:landscape/self-hosted-24.04
+```
+
+Your VM's package information will now be up-to-date and includes information about the Landscape packages. Run the command below to install Landscape Server (quickstart mode) on your VM:
+
+```bash
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y landscape-server-quickstart
+```
+
+The installation will take some time during which you'll get a lot of output. You can ignore the output for this tutorial. For the full details on installing Landscape in quickstart mode, see {ref}`how-to-quickstart-installation`.
+
+Once installation is complete, you can exit the shell by executing the `exit` command:
+
+```bash
+exit
+```
+
+You command prompt should go back to your standard host machine prompt after you exit the VM.
+
+## Register the first Landscape administrator
+
+From a browser on your host machine, navigate to `https://10.253.187.38` replacing the IP address in the URL with the one for your Landscape Server VM. Your browser will likely warn about a self-signed certificate. It's OK to accept the risk in your browser and continue in this case. Depending on your browser, you may have to click into advanced options to proceed, such as **Advanced** > **Proceed to [site] (unsafe)**.
+
+Complete the form to create the first admin user. Your account name is called `standalone`. Once you complete the form, Landscape will automatically bootstrap your new account. Now, you're logged in to Landscape and can start registering and managing client computers.
+
+## Install and configure Landscape Client
+
+From your host machine, open a shell to the `noble` client VM.
+
+```bash
+multipass shell tutorial-landscape-client-noble
+```
+
+Your prompt should now be `ubuntu@tutorial-landscape-client-noble`.
+
+Attach your Ubuntu Pro token, replacing `your-pro-token` with your actual Pro token.
+
+```bash
+sudo pro attach your-pro-token
+```
+
+When completed, the output should include lines similar to the ones below (along with other lines that we are not displaying here):
+
+```text
+This machine is now attached to 'Ubuntu Pro - free personal subscription'
+
+     Account: your_name@example.com
+Subscription: Ubuntu Pro - free personal subscription
+```
+
+Next, run the following command to get the server's public SSL certificate and save it where `landscape-client` can use it when it needs to make HTTPS requests to your Landscape Server. Replace the IP address with the one for your Landscape Server VM, but keep the `:443` port.
+
+```bash
+echo | openssl s_client -connect 10.253.187.38:443 | openssl x509 | sudo tee /etc/landscape/server.pem
+```
+
+Now you'll install Landscape Client.
+
+```bash
+sudo apt update && sudo apt install -y landscape-client
+```
+
+Edit the `/etc/landscape/client.conf` file to match the contents below. You'll need to use `sudo` to edit the file. Be sure to replace the IP address in both `url` and `ping_url` with the one for your Landscape Server VM.
+
+```ini
+[client]
+log_level = info
+url = https://10.253.187.38/message-system
+ping_url = http://10.253.187.38/ping
+data_path = /var/lib/landscape/client
+ssl_public_key = /etc/landscape/server.pem
+account_name = standalone
+computer_title = tutorial-landscape-client-noble
+include_manager_plugins = ScriptExecution
+script_users = landscape,ubuntu
+```
+
+If you're not sure how to edit the file, you can use `nano` to do so.
+
+```bash
+sudo nano /etc/landscape/client.conf
+```
+
+If you used `nano`, change the file as needed and press `CTRL-O` followed by `ENTER` to save the file and `CTRL-X` to exit.
+
+Once you've edited and saved the file, send a registration request to Landscape Server.
+
+```bash
+sudo landscape-config --silent
+```
+
+You should see a message indicating that the registration message was successfully sent to Landscape Server. If you get a message indicating that client was unable to connect to the server, double-check that you downloaded the server's certificate to the `/etc/landscape/` directory and that the IP address in the `/etc/landscape/client.conf` file matches the IP address you used earlier.
+
+You can now exit your client VM and return to your host machine.
+
+```bash
+exit
+```
+
+Go to your Landscape Server UI in your browser and click the arrow icon in the header. You should have a notification that a pending computer needs attention. Click that notification, select your computer, and click **Accept**.
+
+## Run a script
+
+From the **{spellexception}`Organisation`** home page in the Landscape web portal, click on the **Scripts** tab. Click **Add script** to create a script with the following contents to be run as the `ubuntu` user. Give it the name `Hello World` and save it.
+
+```bash
+#!/bin/bash
+echo "Hello, World!" > /home/ubuntu/hello
+```
+
+Note that this script may take a few minutes to complete. 
+
+From the **Computers** page, select your computer and then click the **Scripts** tab. Select the `Hello World` script and click **Next**. You can leave all the other defaults, then click **Run** to create an activity to run the script on your client VM.
+
+Once the activity succeeds, the status of your activity in the web portal will change to "1 activity finished successfully". You can check the file was created by opening a shell on your client VM.
+
+```bash
+multipass shell tutorial-landscape-client-noble
+```
+
+The directory listing should show the file `hello` in the `ubuntu` user's home directory.
+
+```bash
+ls -l
+```
+
+
+And the contents should be `Hello, World!`.
+
+```bash
+cat hello
+```
+
+After you've confirmed the file exists on your VM, you can return to your host machine:
+
+```bash
+exit
+```
+
+## Explore the web portal
+
+Continue experimenting with the environment you've created to discover more of Landscape's management features. See the {ref}`how-to-guides-web-portal-classic-web-portal-index` and {ref}`how-to-guides-web-portal-web-portal-24-04-or-later-index` for more information on available features to explore in the web portal.
+
+## Cleanup
+
+Congratulations! You now have successfully installed Landscape Server on a Multipass VM, registered another Multipass VM running Landscape Client, and executed a script on that VM. You can continue to explore the web portal and other management features that Landscape has to offer.
+
+When you're done exploring Landscape, don't forget to remove the Multipass VMs from your host machine. The `delete` command removes the VMs, and `--purge` frees up the disk space on your workstation.
+
+```bash
+multipass delete tutorial-landscape-client-noble tutorial-landscape-server-noble --purge
+```
+
+## Summary
+
+In this tutorial, you set up a basic self-hosted Landscape installation, registered a client instance, and used the web portal to execute a script remotely. Now, you have a high-level understanding of Landscape's client-server architecture and some of the fundamental workflows for managing Ubuntu systems with Landscape.
+
+From here, you have several options:
+
+- **Learn more about Landscape**: See {ref}`what-is-landscape` and the {ref}`explanation-index` section to learn more about Landscape and its features.
+- **Set up a production installation**: If you're ready to deploy Landscape for real systems, see {ref}`how-to-guides-landscape-installation-and-set-up-index` for installation guides.
+- **Use Landscape SaaS**: To continue exploring Landscape without the self-hosted infrastructure, see {ref}`howto-create-saas-account`.
+- **Get support**: Connect with community members using [Ubuntu's community support](https://ubuntu.com/support/community-support) or [join the Landscape Discourse forum](https://discourse.ubuntu.com/c/landscape/89)
