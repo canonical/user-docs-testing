@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  copilot-requests: write
 
 model: gpt-5
 engine: 
