@@ -13,9 +13,10 @@ permissions:
   contents: read
   copilot-requests: write
 
-model: gpt-5
+#model: gpt-5
 engine: 
   id: copilot
+max-ai-credits: 50
 
 runs-on: [ubuntu-latest]
 #runs-on: [self-hosted, linux, amd64]
@@ -33,8 +34,6 @@ sandbox:
   agent: false
 
 strict: false
-
-max-ai-credits: 50
 
 network:
   allowed:
@@ -59,12 +58,12 @@ jobs:
             exit 1
           fi
           echo "Tutorial passed safety check."
-#      - name: Fix iptables FORWARD chain for Kubernetes pod egress
-#        run: |
-#          echo "Docker sets the FORWARD chain policy to DROP, which blocks Kubernetes pod egress."
-#          sudo iptables -P FORWARD ACCEPT
-#          echo "FORWARD chain policy set to ACCEPT"
-#          sudo iptables -L FORWARD | head -n 1
+      - name: Fix iptables FORWARD chain for Kubernetes pod egress
+        run: |
+          echo "Docker sets the FORWARD chain policy to DROP, which blocks Kubernetes pod egress."
+          sudo iptables -P FORWARD ACCEPT
+          echo "FORWARD chain policy set to ACCEPT"
+          sudo iptables -L FORWARD | head -n 1
 
 # Optional hints — the agent falls back to runtime discovery when omitted.
 # config:
