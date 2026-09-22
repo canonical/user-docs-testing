@@ -13,7 +13,9 @@ permissions:
   contents: read
   copilot-requests: write
 
-engine: copilot
+model: gpt-5
+engine: 
+  id: copilot
 
 runs-on: [ubuntu-latest]
 #runs-on: [self-hosted, linux, amd64]
