@@ -43,6 +43,9 @@ network:
 
 # Pre-flight safety check: reject tutorials containing obviously destructive
 # commands before the agent ever sees them.
+#
+# The iptables step works around Docker setting the default FORWARD chain
+# policy to DROP, which blocks Kubernetes pod egress on this runner.
 jobs:
   setup:
     steps:
@@ -54,6 +57,12 @@ jobs:
             exit 1
           fi
           echo "Tutorial passed safety check."
+      - name: Fix iptables FORWARD chain for Kubernetes pod egress
+        run: |
+          echo "Docker sets the FORWARD chain policy to DROP, which blocks Kubernetes pod egress."
+          sudo iptables -P FORWARD ACCEPT
+          echo "FORWARD chain policy set to ACCEPT"
+          sudo iptables -L FORWARD | head -n 1
 
 # Optional hints — the agent falls back to runtime discovery when omitted.
 # config:
@@ -226,24 +235,6 @@ directly on the runner.
 
 You have full `sudo`, `snap`, and `apt` access. Use them to install
 prerequisites.
-
-### Configure DNS
-
-Before proceeding with prerequisites, ensure DNS resolution is working for external services:
-
-```bash
-# Verify DNS resolution for Charmhub
-nslookup api.charmhub.io 8.8.8.8 || echo "DNS resolution failed for api.charmhub.io"
-
-# If DNS fails, update /etc/resolv.conf to use Google's public DNS
-sudo tee /etc/resolv.conf > /dev/null <<EOF
-nameserver 8.8.8.8
-nameserver 8.8.4.4
-EOF
-
-# Verify resolution again
-nslookup api.charmhub.io 8.8.8.8
-```
 
 ### Install prerequisites
 
