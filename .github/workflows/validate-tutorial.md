@@ -1,6 +1,6 @@
 ---
 description: >
-  Repository-agnostic tutorial validator. Discovers the tutorial file,
+  Repository-agnostic tutorial tester. Discovers the tutorial file,
   analyses prerequisites, executes every step on the runner, and opens
   a GitHub issue if any step fails.
 on:
@@ -86,9 +86,9 @@ safe-outputs:
     deduplicate-by-title: 1
 ---
 
-# Validate the repository tutorial
+# Test the repository tutorial
 
-You are a tutorial-validation agent. Your job is to find the tutorial in this
+You are a tutorial-testing agent. Your job is to find the tutorial in this
 repository, understand what it requires, execute every step on the runner,
 and report the outcome.
 
@@ -198,35 +198,6 @@ Locate any final section whose heading contains words like "Clean up",
 "Teardown", "Remove", or "Destroy". Mark those sections to be **skipped**
 during execution — the runner is ephemeral and will be torn down separately.
 
-### 2d. Security analysis of executable commands
-
-For **every** executable command collected in 2a (including prerequisite
-installation commands), perform a security-focused review before executing
-anything. For each command, determine:
-
-- **Risk**: Does the command carry a security-related risk? Consider things
-  like: elevated-privilege flags (`--trust`, `--classic`, `sudo`), broad
-  network exposure (binding to `0.0.0.0`, opening ports, disabling TLS
-  verification), secrets or credentials appearing in plaintext (in the
-  command itself, in a heredoc, or written to a file), piping remote content
-  directly into a shell (`curl | sh`), overly permissive file or process
-  permissions (`chmod 777`, running services as root unnecessarily), and use
-  of deprecated or known-insecure flags/APIs.
-- **Best-practice alternative**: If a risk is present, identify a safer or
-  more idiomatic alternative the tutorial could use instead. If the command
-  is a reasonable and necessary use of an elevated capability (e.g., a charm
-  genuinely requires `--trust` to function), say so explicitly rather than
-  recommending removal — the goal is a realistic, actionable suggestion, not
-  a blanket objection.
-- If a command carries no meaningful security risk, record that explicitly
-  (e.g., "no risk identified") rather than omitting it — the final report
-  should account for every command reviewed, not just the risky ones.
-
-Keep a structured record of each command alongside its risk assessment and
-recommendation (if any). This record is used to populate the **Security
-analysis** section of the report in Phase 5, regardless of whether the
-tutorial ultimately succeeds or fails.
-
 ---
 
 ## Phase 3 — Set up the environment
@@ -288,10 +259,7 @@ Call the `noop` tool with a message containing:
 
 1. A one-line summary, e.g.
    `"Tutorial completed successfully — no action needed."`
-2. A **Security analysis** section listing every command reviewed in
-   Phase 2d along with its risk assessment and, where applicable, a
-   best-practice alternative.
-3. An **Execution pivots** section listing every pivot recorded in Phase 4
+2. An **Execution pivots** section listing every pivot recorded in Phase 4
    (original command, executed command, reason), or the text `"None"` if no
    pivots were needed.
 
@@ -311,11 +279,7 @@ Call the `create_issue` tool **once** with:
      command, exit status, and trimmed evidence.
   4. **Root cause hypothesis**: for each failed step, a short analysis.
   5. **Follow-ups**: anything that blocked the tutorial or would improve it.
-  6. **Security analysis**: every command reviewed in Phase 2d along with
-     its risk assessment and, where applicable, a best-practice
-     alternative, so the report reflects the review regardless of pass/fail
-     status.
-  7. **Execution pivots**: every pivot recorded in Phase 4 (original
+  6. **Execution pivots**: every pivot recorded in Phase 4 (original
      command, executed command, reason), or the text `"None"` if no pivots
      were needed. Call out any pivot that may indicate a bug in the
      tutorial itself.
