@@ -1,8 +1,8 @@
 ---
 description: >
-  Repository-agnostic tutorial validator. Discovers the tutorial file,
-  analyses prerequisites, executes every step in a fresh Multipass VM,
-  and opens a GitHub issue if any step fails.
+  Repository-agnostic tutorial tester. Discovers the tutorial file,
+  analyses prerequisites, executes every step on the runner, and opens
+  a GitHub issue if any step fails.
 on:
   workflow_dispatch:
 #  schedule:
@@ -13,38 +13,71 @@ permissions:
   contents: read
   copilot-requests: write
 
-engine: copilot
+#model: gpt-5
+engine: 
+  id: copilot
+max-ai-credits: 50
 
 runs-on: [ubuntu-latest]
+#runs-on: [self-hosted, linux, amd64]
 timeout-minutes: 60
+
+env:
+  TUTORIAL_PATH: "docs/tutorial/tutorial.md" 
+
+# Disable the AWF sandbox so the agent can use sudo, snap, and apt.
+# The ubuntu-latest runner is ephemeral, so the isolation loss is acceptable.
+features:
+  dangerously-disable-sandbox-agent: "tutorial validation requires sudo snap and apt for installing prerequisites like juju and microk8s"
+
+sandbox:
+  agent: false
+
+strict: false
+
+network:
+  allowed:
+    - defaults
+    - api.charmhub.io
+    - "snapcraft.io"
+    - "charmhub.io"
+
+# Pre-flight safety check: reject tutorials containing obviously destructive
+# commands before the agent ever sees them.
+#
+# The iptables step works around Docker setting the default FORWARD chain
+# policy to DROP, which blocks Kubernetes pod egress on this runner.
+jobs:
+  setup:
+    steps:
+      - name: Validate tutorial safety
+        run: |
+          echo "Checking tutorial for dangerous patterns..."
+          if grep -qE 'rm -rf /|mkfs\.|dd if=/dev/zero|> /dev/sd' "$TUTORIAL_PATH" 2>/dev/null; then
+            echo "ERROR: Tutorial contains potentially destructive commands"
+            exit 1
+          fi
+          echo "Tutorial passed safety check."
+      - name: Fix iptables FORWARD chain for Kubernetes pod egress
+        run: |
+          echo "Docker sets the FORWARD chain policy to DROP, which blocks Kubernetes pod egress."
+          sudo iptables -P FORWARD ACCEPT
+          echo "FORWARD chain policy set to ACCEPT"
+          sudo iptables -L FORWARD | head -n 1
 
 # Optional hints — the agent falls back to runtime discovery when omitted.
 # config:
-#   tutorial-path: docs/tutorial.md
-#   vm-cpus: 4
-#   vm-memory: 8G
-#   vm-disk: 50G
-#   vm-image: "24.04"
+#   tutorial-path: docs/tutorial.md  # or docs/tutorial.rst
 #   prerequisites:
 #     - juju
 #     - microk8s
 
 tools:
-  bash:
-    - "multipass:*"
-    - "cat"
-    - "find"
-    - "ls"
-    - "sed"
-    - "awk"
-    - "grep"
-    - "head"
-    - "tail"
-    - "wc"
-    - "date"
+  bash: [":*"]
   edit:
 
 safe-outputs:
+  threat-detection: false
   create-issue:
     title-prefix: "[tutorial-failure] "
     labels: [tutorial, automation, bug]
@@ -52,33 +85,59 @@ safe-outputs:
     deduplicate-by-title: 1
 ---
 
-# Validate the repository tutorial
+# Test the repository tutorial
 
-You are a tutorial-validation agent. Your job is to find the tutorial in this
-repository, understand what it requires, execute every step inside an isolated
-Multipass VM, and report the outcome.
+You are a tutorial-testing agent. Your job is to find the tutorial in this
+repository, understand what it requires, execute every step on the runner,
+and report the outcome.
 
 Work through the phases below **in order**.
+
+**IMPORTANT — Runner environment**: You are executing directly on an ephemeral
+`ubuntu-latest` GitHub Actions runner with the AWF sandbox disabled. The
+following are true about your environment:
+
+- You have a normal user shell with full `sudo` access.
+- `snap` and `apt` are available and fully functional. Use them to install
+  any prerequisites the tutorial requires.
+- You do not need nested virtualisation. Run tutorial commands directly on
+  this runner — it is already an isolated, disposable environment.
+- If a tutorial lists Multipass as a prerequisite, ignore it. Multipass is
+  infrastructure for the workflow author, not a tutorial dependency for you.
 
 ---
 
 ## Phase 1 — Discover the tutorial
 
-Locate the tutorial file to execute.
+Locate the tutorial file to execute. The tutorial may be written in Markdown
+(`.md`) or reStructuredText (`.rst`). Treat both formats equally.
 
-1. If a `tutorial-path` value is provided in the `config` block above, use
-   that path directly.
-2. Otherwise, search the repository in the following order and use the **first
-   match**:
-   - `docs/tutorial.md`
-   - `TUTORIAL.md`
-   - `docs/tutorials/` (if the directory exists, pick the primary file — an
-     `index.md` or the only `.md` file present)
-   - `README.md` — only if it contains a Markdown heading whose text includes
-     the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
-     Extract only that section and its subsections.
-3. If no tutorial is found, call the `noop` tool with the message
-   `"No tutorial found in repository — nothing to validate."` and stop.
+**Step 1 — Read the environment variable**: Run `echo "$TUTORIAL_PATH"` to
+get the configured tutorial path. This is the **primary** source of truth.
+If the output is a non-empty file path, use it directly. Do not fall back
+to auto-discovery unless the file genuinely does not exist at that path.
+
+**Step 2 — Check the config override**: If a `tutorial-path` value is
+provided in the `config` block above, it takes precedence over
+`TUTORIAL_PATH`. Use that path instead.
+
+**Step 3 — Verify the file exists**: Run `ls -la` on the resolved path to
+confirm the file is present. If it exists, proceed to read it.
+
+**Step 4 — Auto-discovery (last resort)**: Only if the resolved path does
+not exist, search the repository in the following order and use the
+**first match**:
+- `docs/tutorial.md` or `docs/tutorial.rst`
+- `TUTORIAL.md` or `TUTORIAL.rst`
+- `docs/tutorials/` (if the directory exists, pick the primary file — an
+  `index.md`, `index.rst`, or the only `.md`/`.rst` file present)
+- `README.md` or `README.rst` — only if it contains a heading whose text
+  includes the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
+  Extract only that section and its subsections.
+
+**Step 5 — Give up if nothing found**: If no tutorial is found after all
+of the above, call the `noop` tool with the message
+`"No tutorial found in repository — nothing to validate."` and stop.
 
 Read the discovered file in full before proceeding.
 
@@ -90,10 +149,13 @@ Extract the information needed to set up the environment and run the tutorial.
 
 ### 2a. Identify executable commands
 
-Scan every fenced code block in the tutorial. A block is **executable** when
-any of the following are true:
+Scan every code block in the tutorial. The tutorial may use Markdown fenced
+blocks or reStructuredText `.. code-block::` directives. A block is
+**executable** when any of the following are true:
 
 - Its language hint is `bash`, `sh`, `shell`, or `console`.
+  - Markdown: ` ```bash ` or ` ```console `
+  - reStructuredText: `.. code-block:: bash` or `.. code:: shell`
 - It has no language hint **and** its lines begin with a `$` or `#` prompt
   character (strip the prompt before execution).
 - It has no language hint and the surrounding prose clearly introduces it as
@@ -122,61 +184,35 @@ Look for prerequisite information in the tutorial:
 Merge any prerequisites listed in the `config.prerequisites` block above
 with those discovered from the tutorial. Deduplicate.
 
-### 2c. Identify resource requirements
+**Filter infrastructure tools**: Remove the following from the merged
+prerequisite list. These are workflow infrastructure, not tutorial
+dependencies, and MUST NOT be installed by you:
 
-Check whether the tutorial states minimum hardware requirements (CPU, RAM,
-disk). If the tutorial specifies values **higher** than the defaults
-(4 CPUs / 8 GB RAM / 50 GB disk), use the tutorial's values. Otherwise keep
-the defaults. Override with any explicit `config.vm-*` values.
+- `multipass`, `multipassd`, or any Multipass-related package
+- `virtualbox`, `qemu`, `libvirt`, `lxd` (hypervisors / VM managers)
 
-### 2d. Identify cleanup sections
+### 2c. Identify cleanup sections
 
 Locate any final section whose heading contains words like "Clean up",
 "Teardown", "Remove", or "Destroy". Mark those sections to be **skipped**
-during execution — the VM is torn down separately.
-
-### 2e. Detect tutorial-suggested Multipass usage
-
-The tutorial itself may instruct the reader to create a Multipass VM (e.g.,
-`multipass launch`, `multipass exec`). Because the agent already runs inside
-a fresh, isolated Ubuntu VM, nested Multipass is unavailable.
-
-If you detect tutorial steps that launch or exec into a Multipass VM:
-
-1. **Drop** the `multipass launch`, `multipass delete`, `multipass purge`,
-   and any other Multipass lifecycle commands from the executable list.
-2. **Unwrap** any `multipass exec <vm> -- <command>` steps — extract
-   `<command>` and run it directly on the current VM instead.
-3. Treat Multipass itself as a **skipped prerequisite** (do not attempt to
-   install it) and note in the report that the tutorial's Multipass steps
-   were executed directly on the host VM.
+during execution — the runner is ephemeral and will be torn down separately.
 
 ---
 
 ## Phase 3 — Set up the environment
 
-Create an ephemeral Multipass VM so the self-hosted runner stays clean.
-Use the resource values determined in Phase 2c and the VM image from
-`config.vm-image` (default `24.04`).
+This runner is an ephemeral `ubuntu-latest` GitHub Actions runner with the
+AWF sandbox disabled. No nested virtualisation is needed. Run all commands
+directly on the runner.
 
-```
-multipass launch <vm-image> --name tutorial-vm-${{ github.run_id }} \
-  --cpus <cpus> --memory <memory> --disk <disk>
-```
-
-Run **every** subsequent command inside the VM using:
-
-```
-multipass exec tutorial-vm-${{ github.run_id }} -- bash -lc "<command>"
-```
-
-Do **not** run tutorial commands directly on the runner host.
+You have full `sudo`, `snap`, and `apt` access. Use them to install
+prerequisites.
 
 ### Install prerequisites
 
-Install every prerequisite identified in Phase 2b inside the VM. If a
-prerequisite requires installation commands that were already extracted as
-tutorial steps, you may execute them here as part of setup — but still
+Install every prerequisite identified in Phase 2b directly on this runner.
+If a prerequisite requires installation commands that were already extracted
+as tutorial steps, you may execute them here as part of setup — but still
 record them as executed steps.
 
 If any prerequisite fails to install, **record it as a failure** (do not
@@ -186,8 +222,8 @@ silently skip it) and continue with the remaining prerequisites.
 
 ## Phase 4 — Execute the tutorial
 
-Run each executable command from Phase 2a **in document order** inside the
-VM.
+Run each executable command from Phase 2a **in document order** directly
+on the runner.
 
 ### Execution rules
 
@@ -195,14 +231,20 @@ VM.
   trimmed excerpt of stdout/stderr (last ~40 lines is enough).
 - On a step failure, do **not** abort — record the failure and continue with
   the remaining steps so the report captures every problem in one run.
-- Skip the cleanup sections identified in Phase 2d.
+- Skip the cleanup sections identified in Phase 2c.
 - If a command appears stuck for an unexpectedly long time, note this in
   your report. There is no per-command timeout; the overall workflow timeout
   (60 minutes) is the safety net.
 - Do not modify any repository file.
-- If Phase 2e identified tutorial-suggested Multipass steps, run the
-  unwrapped commands directly on the VM rather than attempting nested
-  Multipass. The environment is already a fresh Ubuntu install.
+- **Record pivots**: You may correct, adapt, or otherwise deviate from a
+  command exactly as written in the tutorial (e.g., fixing a typo, changing
+  a flag, substituting a package name, working around a bug) in order to
+  keep making progress. Whenever you do this, log a pivot entry containing
+  the original command as written in the tutorial, the command you actually
+  executed, and a short reason for the change. This applies even when the
+  tutorial step ultimately succeeds — a pivot is a deviation worth
+  reporting regardless of the outcome, since it likely indicates a bug or
+  ambiguity in the tutorial itself.
 
 ---
 
@@ -212,8 +254,13 @@ You **MUST** call exactly one safe output.
 
 ### All steps succeeded
 
-Call the `noop` tool with a message such as:
-`"Tutorial completed successfully — no action needed."`
+Call the `noop` tool with a message containing:
+
+1. A one-line summary, e.g.
+   `"Tutorial completed successfully — no action needed."`
+2. An **Execution pivots** section listing every pivot recorded in Phase 4
+   (original command, executed command, reason), or the text `"None"` if no
+   pivots were needed.
 
 Do not create an issue.
 
@@ -225,13 +272,16 @@ Call the `create_issue` tool **once** with:
 - `body`: a Markdown report containing:
   1. **Run metadata**: date, workflow run URL
      (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`),
-     VM name, VM image, Multipass version, discovered tutorial path,
-     resolved prerequisites.
+     discovered tutorial path, resolved prerequisites.
   2. **Overall status**: `failure` with a one-line summary.
   3. **Per-step results**: one section per tutorial step containing the
      command, exit status, and trimmed evidence.
   4. **Root cause hypothesis**: for each failed step, a short analysis.
   5. **Follow-ups**: anything that blocked the tutorial or would improve it.
+  6. **Execution pivots**: every pivot recorded in Phase 4 (original
+     command, executed command, reason), or the text `"None"` if no pivots
+     were needed. Call out any pivot that may indicate a bug in the
+     tutorial itself.
 
 Only one safe output call is expected per run.
 
@@ -239,11 +289,5 @@ Only one safe output call is expected per run.
 
 ## Phase 6 — Teardown
 
-After you have called either `noop` or `create_issue`, delete the VM:
-
-```
-multipass delete --purge tutorial-vm-${{ github.run_id }}
-```
-
-Failure to reach the teardown step is acceptable — a follow-up cleanup step
-outside the agent handles orphaned VMs.
+No teardown is needed — this runner is ephemeral and will be destroyed by
+the CI platform after the workflow completes. You may skip this phase.
