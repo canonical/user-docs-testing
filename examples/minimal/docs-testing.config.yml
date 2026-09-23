@@ -1,0 +1,20 @@
+# Example: The smallest useful configuration. 
+# See README.md in this folder.
+
+version: 1
+
+targets: "docs/reference/**/*.md"
+
+sources:
+  - name: product
+    repo: my-org/my-product
+
+tests:
+  - reference-review
+
+  - name: cli-surface
+    run: "python3 ../../tests/deterministic/undocumented_surface.py
+           --manifest sources/product/cli-surface.txt
+           --targets docs/reference/**/*.md
+           --output results/cli-surface.json"
+    results: "results/cli-surface.json"
