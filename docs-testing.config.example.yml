@@ -164,6 +164,25 @@ tests:
   #   targets: ["reference/**/*.md"]
   #   sources: [product]
 
+  # --- Tutorial review (agentic, read-only) ---------------------------------
+  # Reviews a tutorial for security risks, prerequisite gaps, and structural
+  # quality issues. No source-of-truth checkout needed — it is a static
+  # analysis of the tutorial file itself.
+  - name: tutorial-review
+    type: agentic
+    engine: copilot
+    # Path to the tutorial file to review.
+    targets:
+      - "docs/tutorial/tutorial.md"
+    exclude: []
+    # Tutorial review does not compare against source repos.
+    sources: []
+    # Auto-generated material: not applicable for tutorials.
+    generated:
+      paths: []
+      mode: skip
+    skip_deterministically_covered: false
+
   # --- A shipped deterministic test -----------------------------------------
   # Uses a script from the tool repo, so your workflow must check it out (the
   # optional `.user-docs-testing` checkout) and enable the deterministic steps.
