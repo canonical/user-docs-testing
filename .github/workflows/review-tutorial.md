@@ -1,8 +1,9 @@
 ---
 description: >
-  Repository-agnostic tutorial reviewer. Discovers the tutorial file,
-  analyses it for security risks, prerequisite completeness, and
-  structural quality issues, then opens a GitHub issue with findings.
+  Repository-agnostic tutorial reviewer. Discovers the tutorial file
+  (via docs-testing.config.yml), analyses it for security risks,
+  prerequisite completeness, and structural quality issues, then
+  reports findings as a CI-gating Check Run.
 on:
   workflow_dispatch:
 #  schedule:
@@ -20,30 +21,18 @@ engine:
 runs-on: [ubuntu-latest]
 timeout-minutes: 15
 
-env:
-  TUTORIAL_PATH: "docs/tutorial/tutorial.md" 
-
 strict: false
 
 max-ai-credits: 20
-
-# Optional hints — the agent falls back to runtime discovery when omitted.
-# config:
-#   tutorial-path: docs/tutorial.md  # or docs/tutorial.rst
-#   prerequisites:
-#     - juju
-#     - microk8s
 
 tools:
   bash: [":*"]
   edit:
 
 safe-outputs:
-  create-issue:
-    title-prefix: "[tutorial-review] "
-    labels: [tutorial, review, automation]
+  create-check-run:
+    name: "Tutorial review"
     max: 1
-    deduplicate-by-title: 1
 ---
 
 # Review the repository tutorial
@@ -62,19 +51,17 @@ Work through the phases below **in order**.
 Locate the tutorial file to review. The tutorial may be written in Markdown
 (`.md`) or reStructuredText (`.rst`). Treat both formats equally.
 
-**Step 1 — Read the environment variable**: Run `echo "$TUTORIAL_PATH"` to
-get the configured tutorial path. This is the **primary** source of truth.
-If the output is a non-empty file path, use it directly. Do not fall back
-to auto-discovery unless the file genuinely does not exist at that path.
+**Step 1 — Read the config**: Read `docs-testing.config.yml`. Find the
+`tutorial-review` test entry in the `tests:` list. Its `targets` field
+specifies the tutorial file(s) to review. Use the first target as the
+**primary** tutorial path. If the config file is missing or the
+`tutorial-review` entry has no targets, fall through to auto-discovery
+(Step 3).
 
-**Step 2 — Check the config override**: If a `tutorial-path` value is
-provided in the `config` block above, it takes precedence over
-`TUTORIAL_PATH`. Use that path instead.
-
-**Step 3 — Verify the file exists**: Run `ls -la` on the resolved path to
+**Step 2 — Verify the file exists**: Run `ls -la` on the resolved path to
 confirm the file is present. If it exists, proceed to read it.
 
-**Step 4 — Auto-discovery (last resort)**: Only if the resolved path does
+**Step 3 — Auto-discovery (last resort)**: Only if the resolved path does
 not exist, search the repository in the following order and use the
 **first match**:
 - `docs/tutorial.md` or `docs/tutorial.rst`
@@ -85,9 +72,9 @@ not exist, search the repository in the following order and use the
   includes the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
   Extract only that section and its subsections.
 
-**Step 5 — Give up if nothing found**: If no tutorial is found after all
-of the above, call the `noop` tool with the message
-`"No tutorial found in repository — nothing to review."` and stop.
+**Step 4 — Give up if nothing found**: If no tutorial is found after all
+of the above, report this as a coverage gap (area: `blocked-required-source-unavailable`)
+in the check run and stop — do not fabricate a review.
 
 Read the discovered file in full before proceeding.
 
@@ -131,8 +118,9 @@ Look for prerequisite information in the tutorial:
 - Tool names mentioned as requirements (e.g., Juju, MicroK8s, Docker,
   Node.js).
 
-Merge any prerequisites listed in the `config.prerequisites` block above
-with those discovered from the tutorial. Deduplicate.
+Merge any prerequisites listed in the `tutorial-review` test entry's
+`prerequisites` field (if present) with those discovered from the
+tutorial. Deduplicate.
 
 **Check for empty or missing prerequisite sections**: If the tutorial has a
 prerequisites heading but no substantive content beneath it (e.g., the next
@@ -228,49 +216,75 @@ Record each finding with its location in the tutorial and a suggested fix.
 
 ## Phase 3 — Report the outcome
 
-You **MUST** call exactly one safe output.
+You **MUST** emit exactly one `create_check_run`. Never call `noop` — even
+a clean review must produce a check run so the CI pipeline has a record.
 
-### No issues found
+### Severity of findings
 
-Call the `noop` tool with a message containing:
+Assign a severity to every finding from Phase 2:
 
-1. A one-line summary:
-   `"Tutorial review complete — no issues found."`
-2. Summary counts: number of commands reviewed for security, number of
-   prerequisites checked, number of structural checks performed.
+- **`error`** — security risks that could cause real harm if a reader
+  copies them blindly. This includes: elevated-privilege flags (`--trust`,
+  `--classic`, `sudo`) without justification, plaintext secrets or
+  credentials in commands/heredocs/files, piping remote content directly
+  into a shell (`curl | sh`), overly permissive file permissions
+  (`chmod 777`, world-writable paths), and binding services to `0.0.0.0`
+  without a warning.
+- **`warning`** — everything else: prerequisite gaps (unlisted tools,
+  missing services, dead prerequisites), structural issues (broken links,
+  missing cleanup, inconsistent terminology, ambiguous instructions,
+  missing sections), and commands with no security risk identified.
 
-Do not create an issue.
+If a command genuinely needs an elevated capability (e.g., a charm
+requires `--trust` to function), note that justification but still assign
+`warning` — the reader should understand the trade-off.
 
-### Issues found
+### Conclusion ladder
 
-Call the `create_issue` tool **once** with:
+Choose the check run conclusion in this order — the three outcomes must
+stay distinct:
 
-- `title`: `Tutorial review findings on run ${{ github.run_id }}`
-- `body`: a Markdown report containing:
+1. **`failure`** — at least one finding with `severity: error` exists AND
+   `reporting.fail_on_findings` is true (from `docs-testing.config.yml`).
+   ("We found a security problem that should block CI.")
+2. **`reporting.on_incomplete_coverage`** (default `neutral`) — no error
+   findings, but the tutorial could not be found, could not be fully
+   parsed, or the review was otherwise incomplete. Never report `success`
+   in this case. ("We could not complete the review.")
+3. **`neutral`** — there are findings but `fail_on_findings` is false.
+   ("We found issues but they are configured not to block CI.")
+4. **`success`** — every analysis phase completed, all commands were
+   reviewed, and no findings of any severity were discovered.
+   ("We reviewed the tutorial and it appears sound.")
 
-  1. **Run metadata**: date, workflow run URL
-     (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`),
-     discovered tutorial path.
+### Report body
 
-  2. **Overall status**: `review-complete` with a summary of issue counts
-     by category (e.g., "3 security findings, 2 prerequisite gaps, 1
-     structural issue").
+The check run body is a Markdown report containing:
 
-  3. **Security analysis** (from 2c): for every executable command
-     reviewed, include the command, its risk assessment, and any
-     best-practice alternative. Group by severity: commands with risks
-     first, then commands with no risk identified.
+1. **Run metadata**: date, workflow run URL
+   (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`),
+   discovered tutorial path.
 
-  4. **Prerequisite gaps** (from 2d): each gap with the command that
-     triggered it, the missing or dead prerequisite, and a suggested fix.
+2. **Overall status**: `review-complete` with a summary of issue counts
+   by category and severity (e.g., "2 error findings, 3 warning findings:
+   1 security, 2 prerequisite gaps, 1 structural issue").
 
-  5. **Structural issues** (from 2e): each issue with its location in the
-     tutorial and a suggested fix. Group by subcategory (broken links,
-     missing cleanup, inconsistent terminology, ambiguous instructions,
-     missing sections).
+3. **Security analysis** (from 2c): for every executable command
+   reviewed, include the command, its risk assessment, and any
+   best-practice alternative. Group findings by severity: commands with
+   `error`-severity risks first, then commands with `warning`-severity
+   risks, then commands with no risk identified.
 
-  6. **Summary table**: a table of all findings with columns for category,
-     severity (use `warning` for all findings — this is a review, not a
-     test failure), location, and a one-line description.
+4. **Prerequisite gaps** (from 2d): each gap with the command that
+   triggered it, the missing or dead prerequisite, and a suggested fix.
+   All use `severity: warning`.
 
-Only one safe output call is expected per run.
+5. **Structural issues** (from 2e): each issue with its location in the
+   tutorial and a suggested fix. Group by subcategory (broken links,
+   missing cleanup, inconsistent terminology, ambiguous instructions,
+   missing sections). All use `severity: warning`.
+
+6. **Summary table**: a table of all findings with columns for category,
+   severity, location, and a one-line description.
+
+Only one `create_check_run` call is expected per run.
