@@ -1,0 +1,5 @@
+# Local working directories, not committed. This example is here to be read; the
+# documentation it refers to lives in the Landscape repositories, not here.
+docs/
+sources/
+results/
