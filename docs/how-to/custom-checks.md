@@ -2,6 +2,8 @@
 
 A deterministic check is a command you supply. There are two ways to report from one, and the simple one needs no code.
 
+This guide covers deterministic checks only. Agentic reviews cannot be added from your configuration; to propose a new one, see [CONTRIBUTING](https://github.com/canonical/user-docs-testing/blob/main/CONTRIBUTING.md#adding-an-agentic-review).
+
 ## Report through the exit status
 
 With no `results:` field, the command's exit status is the answer. Zero passes; non-zero becomes a single finding carrying the command's output.

@@ -8,8 +8,8 @@ This project is a wrapper around [gh-aw](https://github.github.io/gh-aw/) that r
 
 There are two kinds of checks this documentation workflow can use:
 
-- **Agentic reviews**: Performed by an AI engine. Agentic reviews are provided in this project, but you choose which to run in your documentation.
-- **Deterministic checks**: Project-specific checks you supply. These aren't performed by an AI engine, but See [how to add your own deterministic check](docs/how-to/custom-checks.md).
+- **Agentic reviews**: Performed by an AI engine. Agentic reviews are provided in this project, but you choose which to run in your documentation. You cannot add your own in configuration. To propose a new one, see [CONTRIBUTING](CONTRIBUTING.md#adding-an-agentic-review).
+- **Deterministic checks**: Project-specific checks you supply. These aren't performed by an AI engine. See [how to add your own deterministic check](docs/how-to/custom-checks.md).
 
 | Shipped review | Question it answers |
 | --------------- | -------------------- |

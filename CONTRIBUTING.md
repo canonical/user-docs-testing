@@ -33,7 +33,9 @@ The review instructions in `tests/agentic/` are imported by installed workflows 
 
 `docs-testing.config.yml` does not support naming your own project-specific agentic review: `uses:` only accepts the shipped set.
 
-If you want a new agentic review to exist, open an issue or a PR.
+If you want a new agentic review to exist, open an issue or a PR. Include what the review is for, how it decides a finding is real, and what you saw when you ran it against documentation with known defects. The self-tests cannot check any of that.
+
+Compilation pins each imported review to a commit and writes a copy under `.github/aw/`, so a change reaches users only when they run `gh aw update`. Both the generated `.lock.yml` and `.github/aw/` must be committed; they are marked as generated in `.gitattributes`, so they collapse in pull request diffs.
 
 ## Changing the workflow
 
