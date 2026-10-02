@@ -1,7 +1,7 @@
 ---
 description: >
-  Repository-agnostic tutorial reviewer. Discovers the tutorial file
-  (via docs-testing.config.yml), analyses it for security risks,
+  Repository-agnostic tutorial reviewer. Selects the tutorial file(s)
+  from docs-testing.config.yml, analyses them for security risks,
   prerequisite completeness, and structural quality issues, then
   reports findings as a CI-gating Check Run.
 on:
@@ -89,37 +89,32 @@ Work through the phases below **in order**.
 
 ---
 
-## Phase 1 — Discover the tutorial
+## Phase 1 — Select the tutorial files
 
-Locate the tutorial file to review. The tutorial may be written in Markdown
-(`.md`) or reStructuredText (`.rst`). Treat both formats equally.
+Determine which tutorial file(s) to review from the config. A tutorial may be
+written in Markdown (`.md`) or reStructuredText (`.rst`). Treat both formats
+equally.
 
 **Step 1 — Read the config**: Read `docs-testing.config.yml`. Find the
-`tutorial-review` test entry in the `tests:` list. Its `targets` field
-specifies the tutorial file(s) to review. Use the first target as the
-**primary** tutorial path. If the config file is missing or the
-`tutorial-review` entry has no targets, fall through to auto-discovery
-(Step 3).
+`tutorial-review` test entry in the `tests:` list. Its `targets` field is a
+list of glob patterns naming the tutorial file(s) to review; its optional
+`exclude` field is a list of glob patterns to remove from that set. Expand
+every `targets` glob, subtract every `exclude` glob, and collect the matching
+files in document order — this is the authoritative, in-scope set. The config
+is the single source of truth: do not add files it does not name, and do not
+guess a path when it names none.
 
-**Step 2 — Verify the file exists**: Run `ls -la` on the resolved path to
-confirm the file is present. If it exists, proceed to read it.
+**Step 2 — Verify the files exist**: Run `ls -la` on each resolved path to
+confirm the file is present. Review every in-scope file that exists; treat a
+listed target that does not exist as a coverage gap for that path.
 
-**Step 3 — Auto-discovery (last resort)**: Only if the resolved path does
-not exist, search the repository in the following order and use the
-**first match**:
-- `docs/tutorial.md` or `docs/tutorial.rst`
-- `TUTORIAL.md` or `TUTORIAL.rst`
-- `docs/tutorials/` (if the directory exists, pick the primary file — an
-  `index.md`, `index.rst`, or the only `.md`/`.rst` file present)
-- `README.md` or `README.rst` — only if it contains a heading whose text
-  includes the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
-  Extract only that section and its subsections.
+**Step 3 — Report a gap if nothing is in scope**: If the config file is
+missing, the `tutorial-review` entry is absent, its `targets` list is empty,
+or no file matches after applying `exclude`, report this as a coverage gap
+(area: `blocked-required-source-unavailable`) in the check run and stop — do
+not fabricate a review or fall back to auto-discovery.
 
-**Step 4 — Give up if nothing found**: If no tutorial is found after all
-of the above, report this as a coverage gap (area: `blocked-required-source-unavailable`)
-in the check run and stop — do not fabricate a review.
-
-Read the discovered file in full before proceeding.
+Read each in-scope tutorial file in full before proceeding.
 
 ---
 
@@ -129,9 +124,9 @@ Extract the information needed to perform a thorough review.
 
 ### 2a. Identify executable commands
 
-Scan every code block in the tutorial. The tutorial may use Markdown fenced
-blocks or reStructuredText `.. code-block::` directives. A block is
-**executable** when any of the following are true:
+Scan every code block across the in-scope tutorial files. A tutorial may use
+Markdown fenced blocks or reStructuredText `.. code-block::` directives. A block
+is **executable** when any of the following are true:
 
 - Its language hint is `bash`, `sh`, `shell`, or `console`.
   - Markdown: ` ```bash ` or ` ```console `
@@ -306,7 +301,7 @@ The check run body is a Markdown report containing:
 
 1. **Run metadata**: date, workflow run URL
    (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`),
-   discovered tutorial path.
+   the in-scope tutorial path(s) reviewed.
 
 2. **Overall status**: `review-complete` with a summary of issue counts
    by category and severity (e.g., "2 error findings, 3 warning findings:
