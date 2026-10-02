@@ -1,8 +1,8 @@
 ---
 description: >
-  Repository-agnostic tutorial tester. Discovers the tutorial file,
-  analyses prerequisites, executes every step on the runner, and opens
-  a GitHub issue if any step fails.
+  Repository-agnostic tutorial tester. Selects the tutorial file from
+  docs-testing.config.yml, analyses prerequisites, executes every step on
+  the runner, and opens a GitHub issue if any step fails.
 on:
   workflow_dispatch:
 #  schedule:
@@ -21,9 +21,6 @@ max-ai-credits: 50
 runs-on: [ubuntu-latest]
 #runs-on: [self-hosted, linux, amd64]
 timeout-minutes: 60
-
-env:
-  TUTORIAL_PATH: "docs/tutorial/ubuntu-server-welcome-to-the-terminal.md" 
 
 # Disable the AWF sandbox so the agent can use sudo, snap, and apt.
 # The ubuntu-latest runner is ephemeral, so the isolation loss is acceptable.
@@ -50,6 +47,26 @@ network:
 jobs:
   setup:
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      # Resolve the tutorial path from the same config the agent reads, so the
+      # safety gate and the agent act on the same file.
+      - name: Resolve tutorial path from config
+        run: |
+          set -euo pipefail
+          CONFIG="docs-testing.config.yml"
+          PATTERN=$(yq -r '.tests[] | select(.name == "tutorial-validation") | .targets[0] // ""' "$CONFIG")
+          if [ -z "$PATTERN" ]; then
+            echo "ERROR: no tutorial-validation targets in $CONFIG"
+            exit 1
+          fi
+          RESOLVED=$(ls -1 $PATTERN 2>/dev/null | head -n1 || true)
+          if [ -z "$RESOLVED" ] || [ ! -f "$RESOLVED" ]; then
+            echo "ERROR: tutorial target '$PATTERN' matched no existing file"
+            exit 1
+          fi
+          echo "TUTORIAL_PATH=$RESOLVED" >> "$GITHUB_ENV"
+          echo "Resolved tutorial path: $RESOLVED"
       - name: Validate tutorial safety
         run: |
           echo "Checking tutorial for dangerous patterns..."
@@ -64,13 +81,6 @@ jobs:
           sudo iptables -P FORWARD ACCEPT
           echo "FORWARD chain policy set to ACCEPT"
           sudo iptables -L FORWARD | head -n 1
-
-# Optional hints — the agent falls back to runtime discovery when omitted.
-# config:
-#   tutorial-path: docs/tutorial.md  # or docs/tutorial.rst
-#   prerequisites:
-#     - juju
-#     - microk8s
 
 tools:
   bash: [":*"]
@@ -141,39 +151,31 @@ following are true about your environment:
 
 ---
 
-## Phase 1 — Discover the tutorial
+## Phase 1 — Select the tutorial
 
-Locate the tutorial file to execute. The tutorial may be written in Markdown
-(`.md`) or reStructuredText (`.rst`). Treat both formats equally.
+Determine which tutorial file to execute from the config. The tutorial may be
+written in Markdown (`.md`) or reStructuredText (`.rst`). Treat both formats
+equally.
 
-**Step 1 — Read the environment variable**: Run `echo "$TUTORIAL_PATH"` to
-get the configured tutorial path. This is the **primary** source of truth.
-If the output is a non-empty file path, use it directly. Do not fall back
-to auto-discovery unless the file genuinely does not exist at that path.
+**Step 1 — Read the config**: Read `docs-testing.config.yml`. Find the
+`tutorial-validation` test entry in the `tests:` list. Its `targets` field is a
+list of glob patterns naming the tutorial file(s); its optional `exclude` field
+lists globs to remove from that set. Expand the `targets` globs, subtract any
+`exclude` globs, and take the **first** matching file in document order —
+validation executes one tutorial end to end, so only the first in-scope file is
+used. The config is the single source of truth: do not guess a path when it
+names none.
 
-**Step 2 — Check the config override**: If a `tutorial-path` value is
-provided in the `config` block above, it takes precedence over
-`TUTORIAL_PATH`. Use that path instead.
+**Step 2 — Verify the file exists**: Run `ls -la` on the resolved path to
+confirm the file is present.
 
-**Step 3 — Verify the file exists**: Run `ls -la` on the resolved path to
-confirm the file is present. If it exists, proceed to read it.
+**Step 3 — Give up if nothing is in scope**: If the config file is missing, the
+`tutorial-validation` entry is absent, its `targets` list is empty, or no file
+matches after applying `exclude`, call the `noop` tool with the message
+`"No tutorial configured in docs-testing.config.yml — nothing to validate."`
+and stop. Do not fall back to auto-discovery.
 
-**Step 4 — Auto-discovery (last resort)**: Only if the resolved path does
-not exist, search the repository in the following order and use the
-**first match**:
-- `docs/tutorial.md` or `docs/tutorial.rst`
-- `TUTORIAL.md` or `TUTORIAL.rst`
-- `docs/tutorials/` (if the directory exists, pick the primary file — an
-  `index.md`, `index.rst`, or the only `.md`/`.rst` file present)
-- `README.md` or `README.rst` — only if it contains a heading whose text
-  includes the word "Tutorial" (e.g., `## Tutorial`, `# Quick-start tutorial`).
-  Extract only that section and its subsections.
-
-**Step 5 — Give up if nothing found**: If no tutorial is found after all
-of the above, call the `noop` tool with the message
-`"No tutorial found in repository — nothing to validate."` and stop.
-
-Read the discovered file in full before proceeding.
+Read the tutorial file in full before proceeding.
 
 ---
 
@@ -215,8 +217,9 @@ Look for prerequisite information in the tutorial:
 - Tool names mentioned as requirements (e.g., Juju, MicroK8s, Docker,
   Node.js).
 
-Merge any prerequisites listed in the `config.prerequisites` block above
-with those discovered from the tutorial. Deduplicate.
+Merge any prerequisites listed in the `tutorial-validation` test entry's
+`prerequisites` field (if present) in `docs-testing.config.yml` with those
+discovered from the tutorial. Deduplicate.
 
 **Filter infrastructure tools**: Remove the following from the merged
 prerequisite list. These are workflow infrastructure, not tutorial
