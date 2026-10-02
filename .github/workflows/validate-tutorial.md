@@ -23,7 +23,7 @@ runs-on: [ubuntu-latest]
 timeout-minutes: 60
 
 env:
-  TUTORIAL_PATH: "docs/tutorial/tutorial.md" 
+  TUTORIAL_PATH: "docs/tutorial/basic-deployment.rst" 
 
 # Disable the AWF sandbox so the agent can use sudo, snap, and apt.
 # The ubuntu-latest runner is ephemeral, so the isolation loss is acceptable.
@@ -83,6 +83,36 @@ safe-outputs:
     labels: [tutorial, automation, bug]
     max: 1
     deduplicate-by-title: 1
+  # The gate below fails the run deliberately; don't also open a failure issue.
+  report-failure-as-issue: false
+
+# Fail the run when the agent reports a tutorial failure (a create_issue item),
+# so CI is gated. Runs at the end of the agent job, after safe outputs are written.
+post-steps:
+  - name: Gate run on tutorial validation outcome
+    shell: bash
+    run: |
+      set -euo pipefail
+      OUT="${RUNNER_TEMP}/gh-aw/safeoutputs/outputs.jsonl"
+      if [ ! -s "$OUT" ]; then
+        echo "No safe-outputs file at $OUT; nothing to gate."
+        exit 0
+      fi
+      ITEM=$(jq -c 'select(.type=="create_issue")' "$OUT" | head -n1)
+      if [ -z "$ITEM" ]; then
+        echo "Tutorial validation reported no failure; run passes."
+        exit 0
+      fi
+      TITLE=$(printf '%s' "$ITEM" | jq -r '.title // "Tutorial failure"')
+      BODY=$(printf '%s' "$ITEM" | jq -r '.body // ""')
+      {
+        echo "## ❌ ${TITLE}"
+        echo
+        echo "$BODY"
+      } >> "$GITHUB_STEP_SUMMARY"
+      echo "::error::${TITLE} — tutorial validation failed."
+      printf '%s\n' "$BODY"
+      exit 1
 ---
 
 # Test the repository tutorial

@@ -33,6 +33,45 @@ safe-outputs:
   create-check-run:
     name: "Tutorial review"
     max: 1
+  # The gate below fails the run deliberately; don't also open a failure issue.
+  report-failure-as-issue: false
+
+# Mirror the agent's check-run conclusion onto the run's exit status so a
+# `failure` conclusion gates CI. Runs at the end of the agent job, after the
+# agent has written its safe outputs.
+post-steps:
+  - name: Gate run on tutorial-review conclusion
+    shell: bash
+    run: |
+      set -euo pipefail
+      OUT="${RUNNER_TEMP}/gh-aw/safeoutputs/outputs.jsonl"
+      if [ ! -s "$OUT" ]; then
+        echo "No safe-outputs file at $OUT; nothing to gate."
+        exit 0
+      fi
+      ITEM=$(jq -c 'select(.type=="create_check_run" and .conclusion=="failure")' "$OUT" | head -n1)
+      if [ -z "$ITEM" ]; then
+        echo "Tutorial review did not conclude 'failure'; run passes."
+        exit 0
+      fi
+      TITLE=$(printf '%s' "$ITEM" | jq -r '.title // "Tutorial review"')
+      SUMMARY=$(printf '%s' "$ITEM" | jq -r '.summary // ""')
+      TEXT=$(printf '%s' "$ITEM" | jq -r '.text // ""')
+      {
+        echo "## ❌ ${TITLE}"
+        echo
+        echo "$SUMMARY"
+        if [ -n "$TEXT" ]; then
+          echo
+          echo "$TEXT"
+        fi
+      } >> "$GITHUB_STEP_SUMMARY"
+      echo "::error::${TITLE} — tutorial review concluded 'failure'."
+      printf '%s\n' "$SUMMARY"
+      if [ -n "$TEXT" ]; then
+        printf '%s\n' "$TEXT"
+      fi
+      exit 1
 ---
 
 # Review the repository tutorial
