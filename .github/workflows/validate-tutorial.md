@@ -110,8 +110,12 @@ post-steps:
         echo
         echo "$BODY"
       } >> "$GITHUB_STEP_SUMMARY"
-      echo "::error::${TITLE} — tutorial validation failed."
+      # Keep the plain-text job log readable: short annotation plus a pointer to
+      # the rendered report; fold the Markdown body into a collapsible group.
+      echo "::error::${TITLE} — tutorial validation failed. See the run Summary for the full report."
+      echo "::group::Full tutorial validation report (Markdown)"
       printf '%s\n' "$BODY"
+      echo "::endgroup::"
       exit 1
 ---
 
