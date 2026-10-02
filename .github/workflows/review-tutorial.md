@@ -66,10 +66,14 @@ post-steps:
           echo "$TEXT"
         fi
       } >> "$GITHUB_STEP_SUMMARY"
-      echo "::error::${TITLE} — tutorial review concluded 'failure'."
+      # Keep the plain-text job log readable: short prose summary plus a pointer
+      # to the rendered report; fold the Markdown body (tables) into a group.
+      echo "::error::${TITLE} — tutorial review concluded 'failure'. See the run Summary for the full report."
       printf '%s\n' "$SUMMARY"
       if [ -n "$TEXT" ]; then
+        echo "::group::Full tutorial review report (Markdown)"
         printf '%s\n' "$TEXT"
+        echo "::endgroup::"
       fi
       exit 1
 ---
