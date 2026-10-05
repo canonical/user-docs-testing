@@ -26,6 +26,6 @@ tests:
     engine: copilot
     # Validation executes one tutorial end to end; the first matched target is used.
     targets:
-      - "docs/tutorial/ubuntu-server-welcome-to-the-terminal.md"
+      - "docs/tutorial/cos-lite-microk8s-sandbox.md"
     exclude: []
     prerequisites: []
