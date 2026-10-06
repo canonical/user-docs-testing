@@ -2,7 +2,8 @@
 description: >
   Repository-agnostic tutorial tester. Selects the tutorial file from
   docs-testing.config.yml, analyses prerequisites, executes every step on
-  the runner, and opens a GitHub issue if any step fails.
+  the runner, and reports the outcome as a CI-gating Check Run that fails
+  the workflow run if any step fails.
 on:
   workflow_dispatch:
 #  schedule:
@@ -87,19 +88,19 @@ tools:
   edit:
 
 safe-outputs:
+  # Required because sandbox.agent is disabled below; threat detection needs the sandbox.
   threat-detection: false
-  create-issue:
-    title-prefix: "[tutorial-failure] "
-    labels: [tutorial, automation, bug]
+  create-check-run:
+    name: "Tutorial validation"
     max: 1
-    deduplicate-by-title: 1
   # The gate below fails the run deliberately; don't also open a failure issue.
   report-failure-as-issue: false
 
-# Fail the run when the agent reports a tutorial failure (a create_issue item),
-# so CI is gated. Runs at the end of the agent job, after safe outputs are written.
+# Mirror the agent's check-run conclusion onto the run's exit status so a
+# `failure` conclusion gates CI. Runs at the end of the agent job, after the
+# agent has written its safe outputs.
 post-steps:
-  - name: Gate run on tutorial validation outcome
+  - name: Gate run on tutorial-validation conclusion
     shell: bash
     run: |
       set -euo pipefail
@@ -108,24 +109,32 @@ post-steps:
         echo "No safe-outputs file at $OUT; nothing to gate."
         exit 0
       fi
-      ITEM=$(jq -c 'select(.type=="create_issue")' "$OUT" | head -n1)
+      ITEM=$(jq -c 'select(.type=="create_check_run" and .conclusion=="failure")' "$OUT" | head -n1)
       if [ -z "$ITEM" ]; then
-        echo "Tutorial validation reported no failure; run passes."
+        echo "Tutorial validation did not conclude 'failure'; run passes."
         exit 0
       fi
-      TITLE=$(printf '%s' "$ITEM" | jq -r '.title // "Tutorial failure"')
-      BODY=$(printf '%s' "$ITEM" | jq -r '.body // ""')
+      TITLE=$(printf '%s' "$ITEM" | jq -r '.title // "Tutorial validation"')
+      SUMMARY=$(printf '%s' "$ITEM" | jq -r '.summary // ""')
+      TEXT=$(printf '%s' "$ITEM" | jq -r '.text // ""')
       {
         echo "## ❌ ${TITLE}"
         echo
-        echo "$BODY"
+        echo "$SUMMARY"
+        if [ -n "$TEXT" ]; then
+          echo
+          echo "$TEXT"
+        fi
       } >> "$GITHUB_STEP_SUMMARY"
-      # Keep the plain-text job log readable: short annotation plus a pointer to
-      # the rendered report; fold the Markdown body into a collapsible group.
-      echo "::error::${TITLE} — tutorial validation failed. See the run Summary for the full report."
-      echo "::group::Full tutorial validation report (Markdown)"
-      printf '%s\n' "$BODY"
-      echo "::endgroup::"
+      # Keep the plain-text job log readable: short prose summary plus a pointer
+      # to the rendered report; fold the Markdown body into a collapsible group.
+      echo "::error::${TITLE} — tutorial validation concluded 'failure'. See the run Summary for the full report."
+      printf '%s\n' "$SUMMARY"
+      if [ -n "$TEXT" ]; then
+        echo "::group::Full tutorial validation report (Markdown)"
+        printf '%s\n' "$TEXT"
+        echo "::endgroup::"
+      fi
       exit 1
 ---
 
@@ -171,7 +180,9 @@ confirm the file is present.
 
 **Step 3 — Give up if nothing is in scope**: If the config file is missing, the
 `tutorial-validation` entry is absent, its `targets` list is empty, or no file
-matches after applying `exclude`, call the `noop` tool with the message
+matches after applying `exclude`, emit a single `create_check_run` with
+conclusion `neutral` (per `reporting.on_incomplete_coverage` in
+`docs-testing.config.yml`, default `neutral`) whose body states
 `"No tutorial configured in docs-testing.config.yml — nothing to validate."`
 and stop. Do not fall back to auto-discovery.
 
@@ -287,11 +298,26 @@ on the runner.
 
 ## Phase 5 — Report the outcome
 
-You **MUST** call exactly one safe output.
+You **MUST** emit exactly one `create_check_run`. Never call `noop` and never
+create an issue — even a clean run must produce a check run so CI has a record.
+The check-run conclusion is mirrored onto the workflow run's exit status: a
+`failure` conclusion fails the run and surfaces the full report in the job log
+and run Summary.
+
+### Choosing the conclusion
+
+Choose the check-run conclusion in this order — the outcomes must stay distinct:
+
+1. **`failure`** — one or more tutorial steps failed (or a prerequisite failed
+   to install). This gates CI.
+2. **`neutral`** — no tutorial was in scope or the tutorial could not be run at
+   all (see Phase 1 Step 3). Never report `success` in this case.
+3. **`success`** — every executable step ran to completion with a successful
+   exit status.
 
 ### All steps succeeded
 
-Call the `noop` tool with a message containing:
+Emit a `create_check_run` with conclusion `success`. Its body must contain:
 
 1. A one-line summary, e.g.
    `"Tutorial completed successfully — no action needed."`
@@ -299,14 +325,12 @@ Call the `noop` tool with a message containing:
    (original command, executed command, reason), or the text `"None"` if no
    pivots were needed.
 
-Do not create an issue.
-
 ### One or more steps failed
 
-Call the `create_issue` tool **once** with:
+Emit a `create_check_run` with conclusion `failure`. Set `title` to
+`Tutorial failure on run ${{ github.run_id }}` and provide a Markdown report in
+the check-run `text` containing:
 
-- `title`: `Tutorial failure on run ${{ github.run_id }}`
-- `body`: a Markdown report containing:
   1. **Run metadata**: date, workflow run URL
      (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`),
      discovered tutorial path, resolved prerequisites.
@@ -320,7 +344,7 @@ Call the `create_issue` tool **once** with:
      were needed. Call out any pivot that may indicate a bug in the
      tutorial itself.
 
-Only one safe output call is expected per run.
+Only one `create_check_run` call is expected per run.
 
 ---
 
