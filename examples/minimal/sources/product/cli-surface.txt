@@ -1,0 +1,6 @@
+# The user-facing options of `widget`, as the product actually defines them.
+# In a real project you would generate this from the source: `widget --help`,
+# an OpenAPI export, or a JSON Schema dump.
+--verbose
+--output
+--retries
