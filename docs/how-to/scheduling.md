@@ -77,7 +77,17 @@ tests:
   - reference-completeness
 ```
 
-Each produces its own Check Run, named from its own `reporting.title`, so the two results stay distinguishable in the Checks UI.
+Both installs ship with the same Check Run name, so their results would be indistinguishable in the Checks UI. Give each one its own name under `safe-outputs`, then run `gh aw compile`:
+
+```yaml
+# .github/workflows/docs-testing-weekly.md
+safe-outputs:
+  create-check-run:
+    name: "Docs Testing (weekly)"
+    max: 1
+```
+
+Name the monthly install `Docs Testing (monthly)` the same way.
 
 ## Running on pull requests
 
