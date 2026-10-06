@@ -1,8 +1,8 @@
 # Getting started
 
-Run a documentation check locally and see each of the outcomes it can produce. Nothing is installed into GitHub, and no AI engine is involved.
+In this tutorial you run a documentation check locally and see each of the outcomes it can produce. Nothing is installed into GitHub, and no AI engine is involved.
 
-The example you will use also declares an agentic review. That one needs the installed workflow and does not run locally, so it is skipped throughout.
+The example you will use also declares an agentic review. That review needs the installed workflow and does not run locally, so it is skipped throughout.
 
 ## Before you start
 
@@ -34,7 +34,14 @@ Exit status is `0`. An undocumented option is worth reporting, but it is not a f
 
 ## Make it pass
 
-Document `--retries` in `docs/reference/cli.md` and run again:
+Add `--retries` to the options list in `docs/reference/cli.md`:
+
+```markdown
+`--retries N`
+: Retry a failed step `N` times before giving up.
+```
+
+Run the check again:
 
 ```
 PASS      documentation verified, nothing to fix
@@ -44,16 +51,16 @@ PASS      documentation verified, nothing to fix
 
 ## See an unverified run
 
-Remove the file the check reads its list of options from:
+Remove the file that the check reads its list of options from:
 
 ```bash
 mv sources/product/cli-surface.txt /tmp/
 docs-testing run
 ```
 
-The result is `INCOMPLETE`, not `PASS`. The product surface could not be read, so the documentation was never verified. A missing source never produces a pass.
+The result is `INCOMPLETE` rather than `PASS`. The product surface could not be read, so the documentation was never verified. A missing source never produces a pass.
 
-Put it back when you are done:
+Put the file back when you are done:
 
 ```bash
 mv /tmp/cli-surface.txt sources/product/
@@ -63,4 +70,4 @@ mv /tmp/cli-surface.txt sources/product/
 
 - [examples/minimal](../../examples/minimal/) also shows how to make the same finding fail the build instead of warning.
 - To run this in CI, and to add the two shipped reviews, follow the install steps in the [README](../../README.md).
-- [Configuration reference](../reference/configuration.md) covers every field.
+- The [configuration reference](../reference/configuration.md) covers every field.

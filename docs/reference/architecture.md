@@ -1,6 +1,6 @@
 # Architecture
 
-What each directory in this repository contains, and which parts end up in a repository that installs the workflow.
+This document lists what each directory in this repository contains, and which parts end up in a repository that installs the workflow.
 
 ## Directories
 
@@ -10,7 +10,7 @@ What each directory in this repository contains, and which parts end up in a rep
 | `actions/docs-tests/` | The composite GitHub Action that runs the package in CI. Installs the package, validates the configuration, then runs the deterministic stage. |
 | `workflows/docs-testing.md` | The installable workflow: gh-aw frontmatter plus the prompt that instructs the agent. This is what `gh aw add` copies into a user's repository. |
 | `tests/agentic/` | One instruction file per shipped review. Imported by the workflow at compile time and pinned to a commit. |
-| `tests/deterministic/` | Example deterministic checks. These are illustrations to copy and adapt, not checks the workflow runs for you. |
+| `tests/deterministic/` | Example deterministic checks. These are illustrations to copy and adapt, rather than checks the workflow runs for you. |
 | `selftests/` | Contract tests for this repository, run by `.github/workflows/selftest.yml`. |
 | `examples/` | Two worked configurations. See [examples/minimal](../../examples/minimal/) and [examples/full-product](../../examples/full-product/). |
 | `docs/` | This documentation. |
