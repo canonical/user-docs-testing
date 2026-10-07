@@ -9,13 +9,13 @@ on:
     - cron: "weekly on monday"
 ```
 
-Manual runs need nothing extra — Actions → Docs Testing → Run workflow.
+Manual runs need no extra configuration. Go to Actions, select Docs Testing, then select **Run workflow**.
 
 ## Schedule syntax
 
-Schedules are gh-aw's, and it accepts both friendly expressions and raw cron. The [gh-aw triggers reference](https://github.github.io/gh-aw/reference/triggers/) documents the full syntax. Two behaviors matter here:
+Schedules belong to gh-aw, which accepts both friendly expressions and raw cron. The [gh-aw triggers reference](https://github.github.io/gh-aw/reference/triggers/) documents the full syntax. Two behaviors are relevant here:
 
-- Friendly expressions such as `daily` or `weekly on monday` are *scattered*: gh-aw derives a fixed minute from your repository name, so many repositories sharing a schedule do not all start at once. Raw cron is used exactly as written.
+- Friendly expressions such as `daily` or `weekly on monday` are *scattered*. gh-aw derives a fixed minute from your repository name, so repositories sharing a schedule do not all start at once. Raw cron is used exactly as written.
 - Monthly schedules require raw cron, for example `0 6 1 * *`.
 
 Several entries are allowed:
@@ -77,13 +77,23 @@ tests:
   - reference-completeness
 ```
 
-Each produces its own Check Run, named from its own `reporting.title`, so the two results stay distinguishable in the Checks UI.
+Both installs ship with the same Check Run name, so their results would be indistinguishable in the Checks UI. Give each one its own name under `safe-outputs`, then run `gh aw compile`:
+
+```yaml
+# .github/workflows/docs-testing-weekly.md
+safe-outputs:
+  create-check-run:
+    name: "Docs Testing (weekly)"
+    max: 1
+```
+
+Name the monthly install `Docs Testing (monthly)` the same way.
 
 ## Running on pull requests
 
-The shipped workflow does not trigger on pull requests, deliberately: a reference review costs AI credits on every push, and a fork pull request must never be able to reach a private source token.
+The shipped workflow does not trigger on pull requests. A reference review costs AI credits on every push, and a fork pull request must never be able to reach a private source token.
 
-If you have no private sources and want PR-time coverage, add:
+If you have no private sources and want coverage at pull request time, add:
 
 ```yaml
 on:
