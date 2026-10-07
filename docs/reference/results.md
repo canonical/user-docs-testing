@@ -37,6 +37,8 @@ Every test classifies each file, glob, or claim category into one state:
 
 `unsupported-by-configured-sources` and `blocked-required-source-unavailable` both mean the area was not verified. Either one makes the run `incomplete`.
 
+The `tutorial-review` test reuses these states, judging a tutorial against itself rather than a source: a reviewed tutorial is `reviewed-and-supported` when clean or `reviewed-with-conflicting-evidence` when it has issues, and a listed file that does not exist is `blocked-required-source-unavailable`. The `tutorial-validation` test does not use this file at all; it executes the tutorial in its own workflow and publishes its own Check Run.
+
 ## Source evidence
 
 Coverage records what a test reports that it reviewed. `source_evidence` records what was present on disk, which allows those reports to be audited:
