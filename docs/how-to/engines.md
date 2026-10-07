@@ -1,6 +1,5 @@
 # How to set up engines and access private sources
 
-<<<<<<< HEAD
 Two independent kinds of credential can be involved in a run. They solve different problems and are configured separately.
 
 - **Engine authentication** — how the AI engine that performs the reviews authenticates.
@@ -11,18 +10,6 @@ Mixing them up is the most common setup failure. A token that can talk to an AI 
 ## Choosing an engine
 
 Engine selection belongs to gh-aw, not to this project. Anything gh-aw supports should work here; however, `copilot` is the only engine we've tested so far.
-=======
-A run can involve two independent kinds of credential. They solve different problems and are configured separately.
-
-- **Engine authentication**: how the AI engine that performs the reviews authenticates.
-- **Source tokens**: how `actions/checkout` reads a *private* product repository declared in `sources:`. Public sources need none.
-
-Confusing the two is a common setup failure. A token that can talk to an AI engine generally cannot read your private repository, and a repository token cannot authenticate to an engine.
-
-## Choosing an engine
-
-Engine selection belongs to gh-aw, not to this project. Anything gh-aw supports should work here, although `copilot` is the only engine tested so far.
->>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 Pick the engine when you install, and gh-aw writes and compiles the workflow:
 
@@ -63,21 +50,13 @@ checkout:
     token: ${{ secrets.SOURCE_REPO_TOKEN }}
 ```
 
-<<<<<<< HEAD
 `docs-testing validate` checks that the two agree, and fails if a required source has no checkout — a review that quietly loses its source verifies nothing.
-=======
-`docs-testing validate` checks that the two agree, and fails if a required source has no checkout. A review that loses its source verifies nothing.
->>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 A fine-grained PAT has a single resource owner, so a token owned by one organization cannot read a private repository in another. A private organization source needs a secret owned by that organization.
 
 ## Keeping private sources safe
 
-<<<<<<< HEAD
 Two rules matter, and neither is optional.
-=======
-Two rules apply to every configuration with a private source.
->>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 **Never expose a source token to an untrusted fork.** A pull request from a fork can modify the workflow and `docs-testing.config.yml`. If a privileged token were available to that run, the fork could use it to read your private repositories. The shipped workflow therefore triggers only on `workflow_dispatch` and `schedule`. If you add a `pull_request` trigger, restrict it to same-repository pull requests.
 
