@@ -95,6 +95,7 @@ safe-outputs:
     max: 1
   # The gate below fails the run deliberately; don't also open a failure issue.
   report-failure-as-issue: false
+  report-failed-jobs: false
 
 # Mirror the agent's check-run conclusion onto the run's exit status so a
 # `failure` conclusion gates CI. Runs at the end of the agent job, after the

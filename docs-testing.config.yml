@@ -26,6 +26,6 @@ tests:
     engine: copilot
     # Validation executes one tutorial end to end; the first matched target is used.
     targets:
-      - "examples/tutorial/landscape-tutorial.md"
+      - "examples/tutorial/tutorial.md"
     exclude: []
     prerequisites: []
