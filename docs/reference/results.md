@@ -1,8 +1,14 @@
 # Results reference
 
+<<<<<<< HEAD
 ## The five outcomes
 
 A documentation test can end in five ways, and they must never collapse into each other. In particular, a tool that failed and documentation that is correct have to look completely different.
+=======
+This document describes the outcomes a documentation test can produce, how coverage is recorded, and the schema that your own checks write.
+
+## The five outcomes
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 | Outcome | Meaning | Exit status | Check Run |
 | ------- | ------- | ----------- | --------- |
@@ -12,6 +18,7 @@ A documentation test can end in five ways, and they must never collapse into eac
 | `fail` | An actionable documentation problem was found. | `1` | `failure` |
 | `error` | The tool failed; the results are not trustworthy. | `2` | `action_required` |
 
+<<<<<<< HEAD
 Precedence is `error` > `fail` > `incomplete` > `warn` > `pass`. `error` outranks everything because a run that did not execute correctly tells you nothing about the documentation, including the parts that appeared to pass.
 
 ### What produces each outcome
@@ -27,6 +34,20 @@ Precedence is `error` > `fail` > `incomplete` > `warn` > `pass`. `error` outrank
 ## Coverage
 
 Pass/fail answers "did anything fail?" but not "what was actually checked?". Reviews are rarely whole-repository: some files can be verified against an available source while others cannot.
+=======
+Precedence is `error` > `fail` > `incomplete` > `warn` > `pass`. A run that did not execute correctly reports nothing about the documentation, including the parts that appeared to pass, so `error` takes priority over the other outcomes.
+
+### What produces each outcome
+
+- **`fail`**: a finding with `severity: error`. This is either a documented claim that the owning source contradicts, or a non-zero exit from one of your own commands.
+- **`warn`**: only `severity: warning` findings, such as undocumented surface, drifting terminology, or a stale but still-working example. Warnings do not block a merge. To change where that line falls, set `severity: error` on a check, or `fail_on_findings: false` globally.
+- **`incomplete`**: something in scope was never checked. A required source could not be read, no configured source owns an area, or a surface manifest was absent. `neutral` renders differently from success but does not block a required check. Set `reporting.on_incomplete_coverage: action_required` if incomplete verification should gate merges. The configuration validator rejects `success` for this field.
+- **`error`**: the run itself broke. A command crashed or was not found, a declared results file was never written, results JSON was unreadable, or the configuration was malformed. These are recorded in `errors` rather than in `findings`.
+
+## Coverage
+
+The outcome states whether anything failed. Coverage states what was checked. Reviews are rarely whole-repository: some files can be verified against an available source, and others cannot.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 Every test classifies each file, glob, or claim category into one state:
 
@@ -38,11 +59,19 @@ Every test classifies each file, glob, or claim category into one state:
 | `unsupported-by-configured-sources` | No configured source is authoritative for it. |
 | `blocked-required-source-unavailable` | A required owning source could not be read. |
 
+<<<<<<< HEAD
 The last two mean "not verified", and either one makes the run `incomplete`.
 
 ## Source evidence
 
 Coverage says what a test *claims* it reviewed. `source_evidence` records what was actually on disk, so those claims can be audited rather than trusted:
+=======
+`unsupported-by-configured-sources` and `blocked-required-source-unavailable` both mean the area was not verified. Either one makes the run `incomplete`.
+
+## Source evidence
+
+Coverage records what a test reports that it reviewed. `source_evidence` records what was present on disk, which allows those reports to be audited:
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 ```json
 "source_evidence": [
@@ -56,13 +85,21 @@ Coverage says what a test *claims* it reviewed. `source_evidence` records what w
 ]
 ```
 
+<<<<<<< HEAD
 This is collected automatically on every run, before anything else. `commit` is the useful field: it is the only hard proof that a private source was really accessed, and at which revision. Without it, a run where a private source silently failed to check out and a run where it was read thoroughly would end the same way.
+=======
+This is collected on every run, before any check executes. `commit` is the field that proves a private source was accessed, and at which revision. Without it, a run where a private source failed to check out looks the same as a run where it was read in full.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 A review must not report an area as verified against a source whose evidence says `"available": false`.
 
 ## The combined results file
 
+<<<<<<< HEAD
 `docs-testing run` writes `results/all.json`. The agent reads it, and so can you.
+=======
+`docs-testing run` writes `results/all.json`. The agent reads this file, and you can read it too.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 ```json
 {
@@ -88,6 +125,7 @@ A review must not report an area as verified against a source whose evidence say
 }
 ```
 
+<<<<<<< HEAD
 `plan` is the validated, normalized configuration: which reviews to run, with what scope, which source owns what, and how to conclude. The agent uses it instead of re-reading the YAML, so configuration is interpreted in exactly one place.
 
 ## Reporting findings from your own check
@@ -95,6 +133,15 @@ A review must not report an area as verified against a source whose evidence say
 A test declaring `results:` writes a JSON object with a `findings` list. Any language works. A test with no `results:` reports through its exit status instead and writes nothing; see [how to add your own check](../how-to/custom-checks.md).
 
 The fields below are stable: new optional ones may be added, but existing ones will not change meaning. The combined `results/all.json`, including `plan`, is not stable — it is the interface between this project and the agent, and it changes freely. Read your own results file, not that one.
+=======
+`plan` is the validated, normalized configuration: which reviews to run, with what scope, which source owns what, and how to conclude. The agent reads `plan` instead of the YAML, so the configuration is interpreted in one place.
+
+## Reporting findings from your own check
+
+A test that declares `results:` writes a JSON object with a `findings` list. Any language can write it. A test with no `results:` reports through its exit status and writes nothing. See [how to add your own check](../how-to/custom-checks.md).
+
+The fields below are stable. New optional fields may be added, but existing fields will not change meaning. The combined `results/all.json` file, including `plan`, is not stable: it is the interface between this project and the agent, and it changes freely. Your check should read its own results file rather than `results/all.json`.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 ```json
 {
@@ -133,9 +180,17 @@ The fields below are stable: new optional ones may be added, but existing ones w
 
 | Field | Required | Description |
 | ----- | -------- | ----------- |
+<<<<<<< HEAD
 | `area` | yes | What was, or was not, reviewed. |
+=======
+| `area` | yes | The file, glob, or claim category this entry describes. |
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 | `state` | yes | One of the five states above. |
 | `sources` | no | Sources this area depends on. |
 | `detail` | no | One line explaining the state, especially why it is blocked. |
 
+<<<<<<< HEAD
 A malformed finding or coverage entry is reported as a tool error, not silently dropped — dropping it could shrink the finding count and turn a real failure into a pass.
+=======
+A malformed finding or coverage entry is reported as a tool error. Dropping it instead would shrink the finding count and could turn a real failure into a pass.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a

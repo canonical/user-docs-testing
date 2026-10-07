@@ -1,6 +1,10 @@
 # Configuration reference
 
+<<<<<<< HEAD
 Everything the documentation testing workflow does is driven by `docs-testing.config.yml` in the root of your documentation repository. Run `docs-testing validate` after changing it; every field below is checked, and mistakes are reported with a location and a suggested fix.
+=======
+`docs-testing.config.yml`, in the root of your documentation repository, drives everything the documentation testing workflow does. Run `docs-testing validate` after changing it. Every field below is checked, and mistakes are reported with a location and a suggested fix.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 The smallest valid configuration:
 
@@ -28,6 +32,7 @@ tests:
 
 Globs support `**`. Paths are relative to the repository root.
 
+<<<<<<< HEAD
 Documentation generated from the source cannot drift from it, so reviewing it costs tokens to confirm something that is true by construction. Leave it out with `exclude`, or better, name it under a test's [`generated`](#fields-common-to-every-test) policy with `mode: skip` — that keeps it in scope and reports it as `skipped-by-policy`, so a reader can see it was deliberately not reviewed rather than quietly missing.
 
 Keeping generated pages out also keeps a review within the size we have tested, which is 22 files. See [how much one review can cover](../explanation/how-it-works.md#how-much-one-review-can-cover) for what happens above that.
@@ -35,6 +40,15 @@ Keeping generated pages out also keeps a review within the size we have tested, 
 ## `sources`
 
 A source is a repository holding the authoritative definition of some documented behavior. Findings must cite one, so a review with no sources cannot prove anything.
+=======
+Documentation generated from the source cannot drift from it, so reviewing it spends tokens confirming something that is true by construction. Leave it out with `exclude`, or name it under a test's [`generated`](#fields-common-to-every-test) policy with `mode: skip`. The `generated` policy keeps the documentation in scope and reports it as `skipped-by-policy`, so a reader can see that it was deliberately not reviewed.
+
+Keeping generated pages out also keeps a review within the tested size of 22 files. See [how much one review can cover](../explanation/how-it-works.md#how-much-one-review-can-cover) for what happens above that.
+
+## `sources`
+
+A source is a repository holding the authoritative definition of some documented behavior. Every finding must cite a source, so a review with no sources cannot prove anything.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 ```yaml
 sources:
@@ -59,6 +73,7 @@ sources:
 - **Required** and unavailable: every area depending on it is reported as `blocked-required-source-unavailable`. The run is *incomplete*, never a pass. Areas backed by other available sources are still reviewed.
 - **Optional** (`required: false`) and unavailable: the areas depending on it are reported as `unsupported-by-configured-sources`. The run continues.
 
+<<<<<<< HEAD
 Each source needs a matching `checkout:` block in `.github/workflows/docs-testing.md`, with `path: sources/<name>`. `docs-testing validate` fails if a required source has no checkout, because a review that silently loses its source verifies nothing.
 
 If the documentation and the product it describes live in the same repository, the source still needs its own `checkout:` block under `sources/<name>` — a second clone of the same repository. Declaring `sources/<name>` as a plain copy of the workflow's own checkout, or pointing it at the repository root, does not work: a source is only attested if it is its own checkout root, so proving which commit was actually verified requires cloning it again.
@@ -66,6 +81,15 @@ If the documentation and the product it describes live in the same repository, t
 ## `source_map`
 
 States once which source owns which documentation, so every test checks an area against the component that *produces* the interface rather than guessing.
+=======
+Each source needs a matching `checkout:` block in `.github/workflows/docs-testing.md`, with `path: sources/<name>`. `docs-testing validate` fails if a required source has no checkout, because a review that loses its source verifies nothing.
+
+If the documentation and the product it describes live in the same repository, the source still needs its own `checkout:` block under `sources/<name>`, which is a second clone of the same repository. Declaring `sources/<name>` as a plain copy of the workflow's own checkout, or pointing it at the repository root, does not work. A source is attested only if it is its own checkout root, so proving which commit was verified requires cloning it again.
+
+## `source_map`
+
+States once which source owns which documentation, so every test checks an area against the component that *produces* the interface instead of guessing.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 ```yaml
 source_map:
@@ -109,11 +133,19 @@ tests:
 | `reference-review` | Does the documentation state something the owning product contradicts? |
 | `reference-completeness` | Does user-facing product surface exist that the documentation never mentions? |
 
+<<<<<<< HEAD
 These are the only checks this tool ships. Every deterministic check is a command of your own.
 
 ### Deterministic checks
 
 A deterministic check is any command, in any language. Nothing about it is AI-driven, and it runs locally as readily as in CI.
+=======
+These are the only checks this tool ships. Every deterministic check is a command that you supply.
+
+### Deterministic checks
+
+A deterministic check is any command, in any language. No part of it is AI-driven, and it runs locally as readily as in CI.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 ```yaml
 tests:
@@ -124,9 +156,15 @@ tests:
       - "pip install -r scripts/requirements.txt"
 ```
 
+<<<<<<< HEAD
 With `results`, the file is the report — see [the results schema](results.md#reporting-findings-from-your-own-check). Without it, the command's exit status is the result: zero passes, non-zero becomes one finding carrying the command's output. That is enough for an existing pass/fail linter. Step by step: [how to add your own check](../how-to/custom-checks.md).
 
 Commands run **without a shell**, so configuration cannot inject one. A command containing `|`, `&&`, `;`, `>` or similar is rejected with an explanation; put the pipeline in a script and call the script.
+=======
+With `results`, the file is the report. See [the results schema](results.md#reporting-findings-from-your-own-check). Without it, the command's exit status is the result: zero passes, and non-zero becomes one finding carrying the command's output. The exit status form is enough for an existing pass/fail linter. For step-by-step instructions, see [how to add your own check](../how-to/custom-checks.md).
+
+Commands run **without a shell**, so configuration cannot inject one. A command containing `|`, `&&`, `;`, `>` or similar characters is rejected with an explanation. Put the pipeline in a script and call the script.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 `targets` and `exclude` scope the **reviews**. A command is your own program, so it scopes itself through its own arguments.
 
@@ -136,10 +174,17 @@ The [`tests/deterministic/`](https://github.com/canonical/user-docs-testing/tree
 
 | Script | What it demonstrates |
 | ------ | -------------------- |
+<<<<<<< HEAD
 | `undocumented_surface.py` | Diffing a machine-readable interface manifest — OpenAPI, JSON Schema, or a captured `--help` — against the documentation, and emitting findings with a `covered_topic` so a review skips them. |
 | `source_manifest.py` | Emitting `coverage` and `source_evidence`, so unverifiable material is reported as blocked rather than passing. |
 
 They are **demonstrations, not checks you are expected to run**. Read them, copy what is useful, and write the checks your project actually needs.
+=======
+| `undocumented_surface.py` | Diffing a machine-readable interface manifest, such as OpenAPI, JSON Schema, or a captured `--help`, against the documentation, and emitting findings with a `covered_topic` so a review skips them. |
+| `source_manifest.py` | Emitting `coverage` and `source_evidence`, so unverifiable material is reported as blocked instead of passing. |
+
+Both are **demonstrations rather than checks you are expected to run**. Read them, copy what is useful, and write the checks your project needs.
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 
 ### Fields common to every test
 
@@ -179,7 +224,11 @@ tests:
 
 | `mode` | Effect |
 | ------ | ------ |
+<<<<<<< HEAD
 | `skip` | Not reviewed. Reported as `skipped-by-policy`, so it is visibly excluded rather than quietly missing. |
+=======
+| `skip` | Not reviewed. Reported as `skipped-by-policy`, so the exclusion is visible in the results. |
+>>>>>>> 2cadfa660c665551d1f1312ec05d28202d3b8c2a
 | `annotate` | Reviewed, with findings labelled as concerning generated material. |
 | `deterministic-only` | Only deterministic checks may cover it; reviews leave it alone. |
 
