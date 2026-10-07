@@ -18,13 +18,8 @@ permissions:
 engine: 
   id: copilot
 max-ai-credits: 50
-#model: gpt-5
-engine: 
-  id: copilot
-max-ai-credits: 50
 
 runs-on: [ubuntu-latest]
-#runs-on: [self-hosted, linux, amd64]
 #runs-on: [self-hosted, linux, amd64]
 timeout-minutes: 60
 
@@ -89,7 +84,6 @@ jobs:
           sudo iptables -L FORWARD | head -n 1
 
 tools:
-  bash: [":*"]
   bash: [":*"]
   edit:
 
@@ -381,10 +375,6 @@ the check-run `text` containing:
      command, exit status, and trimmed evidence.
   4. **Root cause hypothesis**: for each failed step, a short analysis.
   5. **Follow-ups**: anything that blocked the tutorial or would improve it.
-  6. **Execution pivots**: every pivot recorded in Phase 4 (original
-     command, executed command, reason), or the text `"None"` if no pivots
-     were needed. Call out any pivot that may indicate a bug in the
-     tutorial itself.
   6. **Execution pivots**: every pivot recorded in Phase 4 (original
      command, executed command, reason), or the text `"None"` if no pivots
      were needed. Call out any pivot that may indicate a bug in the
