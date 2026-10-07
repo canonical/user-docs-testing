@@ -134,7 +134,6 @@ docs-testing list       # what checks are available?
 **How-to guides**
 
 - [How to add your own check](docs/how-to/custom-checks.md) — exit status or structured findings, and what runs where.
-- [How to test tutorials](docs/how-to/tutorial-testing.md) — static review in the unified run, and end-to-end execution in its own workflow.
 - [How to set up engines and access private sources](docs/how-to/engines.md) — which credential does what, and how to keep a private source safe.
 - [How to schedule runs](docs/how-to/scheduling.md) — cadence, manual runs, and running different scopes at different frequencies.
 
