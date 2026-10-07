@@ -10,7 +10,6 @@ tests:
     uses: tutorial-review
     targets:
       - "*.md"
-      - "*.rst"
     exclude:
       - "README.md"
 
@@ -19,5 +18,5 @@ tests:
   - name: tutorial-validation
     uses: tutorial-validation
     targets:
-      - "basic-deployment.rst"
+      - "tutorial.md"
     prerequisites: []
