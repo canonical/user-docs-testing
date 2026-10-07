@@ -623,6 +623,80 @@ class PlanNamesEveryInScopeFile(ContractTest):
         )
 
 
+class TutorialTests(ContractTest):
+    """The shipped tutorial reviews. `tutorial-review` folds into the unified run;
+    `tutorial-validation` executes the tutorial and so runs in its own workflow."""
+
+    def test_tutorial_review_is_a_review_in_the_unified_plan(self):
+        self.project.doc("tutorial.md", "Run `sudo snap install juju`.")
+        self.project.config(
+            """
+            version: 1
+            targets: "docs/reference/**/*.md"
+            tests:
+              - tutorial-review
+            """
+        )
+        payload, _ = self.project.run()
+        reviews = payload["plan"]["agentic_tests"]
+        self.assertEqual([r["name"] for r in reviews], ["tutorial-review"])
+        self.assertEqual(reviews[0]["files"], ["docs/reference/tutorial.md"])
+
+    def test_tutorial_validation_is_kept_out_of_the_read_only_agents_plan(self):
+        self.project.doc("tutorial.md", "Run `juju deploy`.")
+        self.project.config(
+            """
+            version: 1
+            targets: "docs/reference/**/*.md"
+            tests:
+              - tutorial-validation
+            """
+        )
+        payload, _ = self.project.run()
+        self.assertEqual(payload["plan"]["agentic_tests"], [])
+        execution = payload["plan"]["execution_tests"]
+        self.assertEqual([t["name"] for t in execution], ["tutorial-validation"])
+
+    def test_prerequisites_are_accepted_and_carried_into_the_plan(self):
+        self.project.doc("tutorial.md", "Run `juju deploy`.")
+        self.project.config(
+            """
+            version: 1
+            targets: "docs/reference/**/*.md"
+            tests:
+              - name: tutorial-validation
+                uses: tutorial-validation
+                prerequisites:
+                  - juju
+                  - microk8s
+            """
+        )
+        payload, _ = self.project.run()
+        execution = payload["plan"]["execution_tests"][0]
+        self.assertEqual(execution["prerequisites"], ["juju", "microk8s"])
+
+    def test_an_execution_test_runs_elsewhere_so_adds_no_coverage_here(self):
+        # It runs in its own workflow, so an empty glob here must not make the
+        # unified run incomplete the way an in-run review would.
+        self.project.doc("cli.md", "Anything.")
+        self.project.config(
+            """
+            version: 1
+            targets: "docs/reference/**/*.md"
+            tests:
+              - name: tutorial-validation
+                uses: tutorial-validation
+                targets: "examples/not-here/**/*.md"
+            """
+        )
+        payload, _ = self.project.run()
+        self.assertStatus(payload, PASS)
+        self.assertEqual(
+            [c for c in payload["coverage"] if c.get("test") == "tutorial-validation"],
+            [],
+        )
+
+
 class SourceEvidence(ContractTest):
     """`commit` is documented as hard proof a source was really checked out."""
 
@@ -764,7 +838,7 @@ class CommandLine(unittest.TestCase):
     def test_list_shows_the_shipped_reviews(self):
         result = self._run(["list"], REPO_ROOT)
         self.assertEqual(result.returncode, EXIT_OK)
-        for expected in ("reference-review", "reference-completeness"):
+        for expected in ("reference-review", "reference-completeness", "tutorial-review", "tutorial-validation"):
             self.assertIn(expected, result.stdout)
         self.assertIn("run:", result.stdout)
 

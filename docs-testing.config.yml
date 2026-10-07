@@ -9,9 +9,9 @@ reporting:
     - "docs-testing"
 
 tests:
+  # Static tutorial review — folds into the unified documentation run.
   - name: tutorial-review
-    type: agentic
-    engine: copilot
+    uses: tutorial-review
     targets:
       - "examples/tutorial/lxd-first-steps.md"
     exclude: []
@@ -21,9 +21,9 @@ tests:
       mode: skip
     skip_deterministically_covered: false
 
+  # Tutorial execution — runs in its own privileged workflow.
   - name: tutorial-validation
-    type: agentic
-    engine: copilot
+    uses: tutorial-validation
     # Validation executes one tutorial end to end; the first matched target is used.
     targets:
       - "examples/tutorial/basic-deployment.rst"

@@ -1,0 +1,23 @@
+# Example: testing a tutorial.
+# See README.md in this folder.
+
+version: 1
+
+tests:
+  # Static review of every tutorial in this folder — runs in the unified
+  # documentation workflow and reports into its check run.
+  - name: tutorial-review
+    uses: tutorial-review
+    targets:
+      - "*.md"
+      - "*.rst"
+    exclude:
+      - "README.md"
+
+  # End-to-end execution of one tutorial — runs in its own privileged workflow.
+  # The first matched file is the one executed.
+  - name: tutorial-validation
+    uses: tutorial-validation
+    targets:
+      - "basic-deployment.rst"
+    prerequisites: []

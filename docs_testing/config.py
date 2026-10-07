@@ -21,6 +21,9 @@ DEFAULT_CONFIG_NAME = "docs-testing.config.yml"
 
 AGENTIC = "agentic"
 DETERMINISTIC = "deterministic"
+# A review that executes the documentation on a runner, so it needs its own
+# privileged workflow instead of the shared read-only agent.
+EXECUTION = "execution"
 
 
 @dataclass(frozen=True)
@@ -42,6 +45,16 @@ BUILTINS: dict[str, BuiltIn] = {
         id="reference-completeness",
         kind=AGENTIC,
         summary="Does user-facing product surface exist that the documentation never mentions?",
+    ),
+    "tutorial-review": BuiltIn(
+        id="tutorial-review",
+        kind=AGENTIC,
+        summary="Does the tutorial carry security risks, prerequisite gaps, or structural issues?",
+    ),
+    "tutorial-validation": BuiltIn(
+        id="tutorial-validation",
+        kind=EXECUTION,
+        summary="Does the tutorial run end to end when every step is executed on a runner?",
     ),
 }
 
@@ -79,6 +92,7 @@ TEST_KEYS = {
     "generated",
     "enabled",
     "skip_deterministically_covered",
+    "prerequisites",
 }
 GENERATED_KEYS = {"paths", "mode"}
 GENERATED_MODES = {"skip", "annotate", "deterministic-only"}
@@ -147,6 +161,7 @@ class Test:
     source_map: list[dict] = field(default_factory=list)
     generated: dict | None = None
     skip_deterministically_covered: bool = True
+    prerequisites: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         data = {
@@ -161,6 +176,8 @@ class Test:
         }
         if self.source_map:
             data["source_map"] = self.source_map
+        if self.prerequisites:
+            data["prerequisites"] = self.prerequisites
         return data
 
 
@@ -197,6 +214,10 @@ class Config:
         return [t for t in self.tests if t.kind == AGENTIC]
 
     @property
+    def execution_tests(self) -> list[Test]:
+        return [t for t in self.tests if t.kind == EXECUTION]
+
+    @property
     def deterministic_tests(self) -> list[Test]:
         return [t for t in self.tests if t.kind == DETERMINISTIC]
 
@@ -214,6 +235,7 @@ class Config:
             "sources": [s.to_dict() for s in self.sources],
             "source_map": self.source_map,
             "agentic_tests": [t.to_dict() for t in self.agentic_tests],
+            "execution_tests": [t.to_dict() for t in self.execution_tests],
             "deterministic_tests": [t.name for t in self.deterministic_tests],
         }
 
@@ -431,7 +453,7 @@ def _parse_test(raw, index: int, config_targets: list[str], config_exclude: list
             )
 
     targets = _as_list(raw.get("targets"), f"{where}.targets") or list(config_targets)
-    if kind == AGENTIC and not targets:
+    if kind in (AGENTIC, EXECUTION) and not targets:
         raise ConfigError(
             where,
             "no documentation is in scope for this test",
@@ -456,6 +478,7 @@ def _parse_test(raw, index: int, config_targets: list[str], config_exclude: list
             f"{where}.skip_deterministically_covered",
             True,
         ),
+        prerequisites=_as_list(raw.get("prerequisites"), f"{where}.prerequisites"),
     )
 
 

@@ -11,15 +11,18 @@
 description: "Test documentation against the product it describes."
 labels: ["docs-testing", "automation"]
 
-# The shipped reference tests, each a self-contained instruction file. Both are
-# imported, but only the tests listed in your `docs-testing.config.yml` actually
-# run — so there is normally no reason to edit this block.
+# The shipped review instruction files, each self-contained. All are imported,
+# but only the tests listed in your `docs-testing.config.yml` actually run — so
+# there is normally no reason to edit this block. `tutorial-validation` is not
+# here: it executes the tutorial and ships as its own privileged workflow
+# (workflows/validate-tutorial.md).
 #
 # No release has been tagged yet, so these track `main`. Installing pins them to
 # the commit they resolved to, so they do not change until you run `gh aw update`.
 imports:
   - canonical/user-docs-testing/tests/agentic/reference-review.md@main
   - canonical/user-docs-testing/tests/agentic/reference-completeness.md@main
+  - canonical/user-docs-testing/tests/agentic/tutorial-review.md@main
 
 on:
   workflow_dispatch:

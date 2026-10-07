@@ -29,6 +29,8 @@ See [docs/reference/architecture.md](docs/reference/architecture.md).
 
 The review instructions in `tests/agentic/` are imported by installed workflows and pinned to a commit, so a change reaches users only when they run `gh aw update`. Their effect cannot be verified by the self-tests; they need a real run against a repository with known documentation defects.
 
+Most reviews (`reference-review`, `reference-completeness`, `tutorial-review`) are imported by `workflows/docs-testing.md` and run together in the read-only documentation agent. `tutorial-validation` is the exception: it executes the tutorial, so it is imported by its own privileged workflow, `workflows/validate-tutorial.md`. If you change which built-ins exist, update `BUILTINS` in [docs_testing/config.py](docs_testing/config.py) and add a matching instruction file under `tests/agentic/`.
+
 ## Adding an agentic review
 
 `docs-testing.config.yml` does not support naming your own project-specific agentic review: `uses:` only accepts the shipped set.
