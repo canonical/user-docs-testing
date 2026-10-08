@@ -25,6 +25,7 @@ from docs_testing.config import (
     BUILTINS,
     DEFAULT_CONFIG_NAME,
     AGENTIC,
+    EXECUTION,
     Config,
     ConfigError,
     load,
@@ -209,8 +210,13 @@ def cmd_validate(args) -> int:
         f"{sum(1 for s in config.sources if s.is_private)} private)"
     )
     for test in config.tests:
-        kind = "review" if test.kind == AGENTIC else "check "
-        lines.append(f"  {kind}         {test.name}")
+        if test.kind == AGENTIC:
+            kind = "review"
+        elif test.kind == EXECUTION:
+            kind = "tutorial"
+        else:
+            kind = "check "
+        lines.append(f"  {kind}       {test.name}")
 
     secrets = sorted({s.secret_name for s in config.sources if s.secret_name})
     if secrets:

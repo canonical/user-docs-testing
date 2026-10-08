@@ -15,7 +15,7 @@ from pathlib import Path
 
 from docs_testing.checks import source_evidence
 from docs_testing.checks.globs import find_files
-from docs_testing.config import Config, Test
+from docs_testing.config import Config, EXECUTION, Test
 from docs_testing.results import (
     UNSUPPORTED,
     Results,
@@ -175,7 +175,11 @@ def run_deterministic(
 
     # A test whose glob matches no file examines nothing. Left alone it would
     # sail through as a pass, which is the most misleading result of all.
+    # Execution tests run in their own workflow, so they are not part of this
+    # unified result and must not add coverage to it.
     for test in config.tests:
+        if test.kind == EXECUTION:
+            continue
         if test.targets and not find_files(test.targets, root, test.exclude):
             results.coverage.append(
                 {

@@ -15,10 +15,12 @@ There are two kinds of checks this documentation workflow can use:
 | --------------- | -------------------- |
 | `reference-review` | Does the documentation state something the product contradicts? |
 | `reference-completeness` | Does product surface exist that the documentation never mentions? |
+| `tutorial-review` | Does a tutorial carry security risks, prerequisite gaps, or structural issues? |
+| `tutorial-validation` | Does a tutorial run end to end when every step is executed on a runner? |
 
 Any custom deterministic checks you include run first, and anything they report is excluded from the reviews that follow.
 
-All findings cite the product source that proves it. If an agentic review can't reach its source, it reports the affected documentation as **unverified**, not as passing.
+All findings cite the product source that proves it. If an agentic review can't reach its source, it reports the affected documentation as **unverified**, not as passing. `tutorial-review` is the exception: it judges a tutorial against itself. `tutorial-validation` **executes** the tutorial, so it installs separately as its own workflow (`validate-tutorial.md`) rather than running inside the read-only documentation agent.
 
 ## Install
 

@@ -108,8 +108,12 @@ tests:
 | ------ | ------------------- |
 | `reference-review` | Does the documentation state something the owning product contradicts? |
 | `reference-completeness` | Does user-facing product surface exist that the documentation never mentions? |
+| `tutorial-review` | Does a tutorial carry security risks, prerequisite gaps, or structural issues? (static; no commands are run) |
+| `tutorial-validation` | Does a tutorial run end to end when every step is executed on a runner? |
 
 These are the only checks this tool ships. Every deterministic check is a command that you supply.
+
+`tutorial-validation` differs from the other three: it **executes** the tutorial, so it runs in its own installable workflow (`workflows/validate-tutorial.md`) with a privileged runner, rather than inside the read-only `docs-testing.md` agent. Listing it under `tests:` makes `docs-testing validate` accept it and records its scope; that dedicated workflow is what actually runs it. The other three, `tutorial-review` included, run together in the unified documentation run and report into one Check Run.
 
 ### Deterministic checks
 
@@ -157,6 +161,7 @@ Both are **demonstrations rather than checks you are expected to run**. Read the
 | `generated` | none | `paths` plus `mode`. See below. |
 | `skip_deterministically_covered` | `true` | Do not re-report what a deterministic check already found. |
 | `enabled` | `true` | Set `false` to turn a test off without deleting it. |
+| `prerequisites` | none | Tutorial tests only. Tools the author assumes are already present; merged with the prerequisites the test discovers in the tutorial itself. |
 
 A test's `sources` limits which sources it may consult at all. It does not decide ownership: that still comes from `source_map`.
 

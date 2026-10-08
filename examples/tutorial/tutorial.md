@@ -35,6 +35,11 @@ sudo concierge prepare -p microk8s
 This first command installs Concierge, and the second command uses Concierge to install
 and configure Juju and MicroK8s.
 
+Concierge is distributed as a [classically confined](https://snapcraft.io/docs/classic-confinement)
+snap, so it runs with full access to your working station rather than inside a sandbox. This
+access is required because Concierge installs and configures system-level software (Juju and
+MicroK8s) on your behalf.
+
 MicroK8s must have an NGINX ingress controller enabled. Complete this requirement by running:
 
 ```
@@ -96,6 +101,10 @@ juju deploy redis-k8s --channel latest/edge
 juju deploy postgresql-k8s --channel 14/stable --trust
 juju deploy discourse-k8s
 ```
+
+The `--trust` flag grants `postgresql-k8s` access to your cluster's Kubernetes API through its
+service account. The charm needs this access to create and patch the Kubernetes resources it
+manages. 
 
 Enable the required PostgreSQL extensions:
 
@@ -177,12 +186,17 @@ rbac                 # (core) Role-Based Access Control for authorisation
 ```
 
 If the output is empty then RBAC is not enabled.
-
-If your cluster has RBAC enabled, you'll be prompted to run the following command:
+To enable RBAC, run:
 
 ```
 juju trust nginx-ingress-integrator --scope=cluster
 ```
+
+The `--scope=cluster` flag grants the integrator cluster-wide permissions to manage ingress
+resources across all namespaces in your cluster. This scope is required because the charm
+configures ingress at the cluster level when RBAC is enforced. Only grant this trust when RBAC
+is enabled, and be aware that it is a cluster-wide permission rather than one limited to the
+tutorial's model.
 
 Then you need to integrate the charm with Nginx Ingress Integrator:
 
